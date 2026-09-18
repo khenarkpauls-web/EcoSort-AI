@@ -1,154 +1,490 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#07111f">
 
-<title>EcoSort AI</title>
+<title>EcoSort AI v2</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 
 <style>
+*{box-sizing:border-box}
+
 body{
-    margin:0;
-    background:#07111f;
-    color:white;
-    font-family:Arial,sans-serif;
+  margin:0;
+  background:linear-gradient(160deg,#06101d,#0b1c2f,#07111f);
+  color:#eef7ff;
+  font-family:Arial,Helvetica,sans-serif;
 }
 
-.container{
-    max-width:700px;
-    margin:auto;
-    padding:20px;
+.app{
+  max-width:1100px;
+  margin:auto;
+  padding:18px;
 }
 
-.card{
-    background:#101f34;
-    border-radius:20px;
-    padding:20px;
-    margin-bottom:20px;
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:18px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.logo{
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  background:#36d399;
+  display:grid;
+  place-items:center;
+  font-size:25px;
 }
 
 h1{
-    text-align:center;
-    font-size:36px;
+  margin:0;
+  font-size:23px;
 }
 
-.subtitle{
-    text-align:center;
-    color:#9fb0c5;
+.sub{
+  color:#8fa5bb;
+  font-size:12px;
+  margin-top:3px;
+}
+
+.badge{
+  background:#0c1a2a;
+  border:1px solid #ffffff18;
+  padding:8px 12px;
+  border-radius:20px;
+  font-size:12px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1.35fr .65fr;
+  gap:16px;
+}
+
+.card{
+  background:#0d1b2de8;
+  border:1px solid #ffffff12;
+  border-radius:20px;
+  padding:16px;
 }
 
 .camera{
-    background:black;
-    border-radius:16px;
-    overflow:hidden;
-    margin-top:20px;
+  position:relative;
+  overflow:hidden;
+  padding:0;
+  background:#02070c;
+  aspect-ratio:16/10;
 }
 
 video{
-    width:100%;
-    display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+#overlay{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+
+.cameraTop{
+  position:absolute;
+  top:12px;
+  left:12px;
+  right:12px;
+  display:flex;
+  justify-content:space-between;
+}
+
+.live,
+.status{
+  background:#0000009c;
+  padding:8px 11px;
+  border-radius:20px;
+  font-size:12px;
+}
+
+.dot{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#fb7185;
+  margin-right:6px;
+}
+
+.dot.on{
+  background:#36d399;
+  box-shadow:0 0 10px #36d399;
+}
+
+.cameraBottom{
+  position:absolute;
+  bottom:12px;
+  left:12px;
+  right:12px;
+  display:flex;
+  gap:8px;
 }
 
 button{
-    width:100%;
-    padding:16px;
-    margin-top:12px;
-    border:0;
-    border-radius:14px;
-    background:#2878ff;
-    color:white;
-    font-size:18px;
-    font-weight:bold;
+  border:0;
+  border-radius:12px;
+  padding:11px 14px;
+  font-weight:bold;
+  background:#36d399;
+  color:#06111d;
+  cursor:pointer;
 }
 
-.stop{
-    background:#263f67;
+button.secondary{
+  background:#172a40;
+  color:#eef7ff;
+  border:1px solid #ffffff12;
 }
 
-.status{
-    background:#172943;
-    padding:15px;
-    border-radius:12px;
-    margin-top:15px;
-    color:#65e6a5;
+button:disabled{
+  opacity:.45;
 }
 
-.stats{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
+.controls{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+
+.statgrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
 }
 
 .stat{
-    background:#172943;
-    padding:18px;
-    border-radius:15px;
-}
-
-.number{
-    font-size:32px;
-    font-weight:bold;
+  background:#0a1727;
+  border:1px solid #ffffff12;
+  border-radius:15px;
+  padding:13px;
 }
 
 .label{
-    color:#9fb0c5;
+  color:#8fa5bb;
+  font-size:11px;
 }
 
-#log{
-    color:#9fb0c5;
-    line-height:1.7;
+.value{
+  font-size:25px;
+  font-weight:bold;
+  margin-top:4px;
+}
+
+.sectionTitle{
+  color:#cbd5e1;
+  font-size:12px;
+  font-weight:bold;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  margin:18px 0 9px;
+}
+
+.risk{
+  background:#0a1727;
+  border:1px solid #ffffff12;
+  border-radius:15px;
+  padding:14px;
+}
+
+.risk strong{
+  font-size:20px;
+}
+
+.risk small{
+  display:block;
+  color:#8fa5bb;
+  margin-top:5px;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid #ffffff12;
+  font-size:13px;
+}
+
+.muted{
+  color:#8fa5bb;
+  font-size:12px;
+}
+
+.inputs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+input{
+  width:100%;
+  margin-top:5px;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #ffffff12;
+  background:#091625;
+  color:white;
+}
+
+.history{
+  max-height:220px;
+  overflow:auto;
+}
+
+.historyItem{
+  padding:9px 0;
+  border-bottom:1px solid #ffffff12;
+  font-size:12px;
+}
+
+.notice{
+  margin-top:10px;
+  padding:11px;
+  border-radius:12px;
+  background:#0b1b2c;
+  border:1px solid #ffffff12;
+  color:#8fa5bb;
+  font-size:12px;
+  line-height:1.5;
+}
+
+footer{
+  text-align:center;
+  color:#6f8499;
+  font-size:11px;
+  padding:20px;
+}
+
+@media(max-width:780px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .camera{
+    aspect-ratio:4/3;
+  }
+
+  .app{
+    padding:12px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="app">
 
-<div class="card">
+<header>
+  <div class="brand">
+    <div class="logo">🌱</div>
 
-<h1>🌱 EcoSort AI</h1>
+    <div>
+      <h1>EcoSort AI <span style="color:#36d399">v2</span></h1>
+      <div class="sub">AI Environmental Monitoring Prototype</div>
+    </div>
+  </div>
 
-<div class="subtitle">
-AI Environmental Monitoring System
+  <div class="badge" id="modelBadge">
+    AI: Loading...
+  </div>
+</header>
+
+
+<div class="grid">
+
+<main>
+
+<section class="card camera">
+
+  <video id="video" autoplay playsinline muted></video>
+
+  <canvas id="overlay"></canvas>
+
+  <div class="cameraTop">
+
+    <div class="live">
+      <span id="liveDot" class="dot"></span>
+      <span id="liveText">CAMERA OFF</span>
+    </div>
+
+    <div class="status" id="aiStatus">
+      AI starting...
+    </div>
+
+  </div>
+
+  <div class="cameraBottom">
+
+    <button id="startBtn">
+      📷 Start Camera
+    </button>
+
+    <button id="scanBtn" class="secondary" disabled>
+      🔎 Scan Now
+    </button>
+
+    <button id="stopBtn" class="secondary" disabled>
+      ⏹ Stop
+    </button>
+
+  </div>
+
+</section>
+
+
+<div class="controls">
+
+  <button id="locationBtn" class="secondary">
+    📍 Get Location
+  </button>
+
+  <button id="clearBtn" class="secondary">
+    🧹 Clear History
+  </button>
+
 </div>
 
-<div id="status" class="status">
-Loading AI model...
+
+<section class="card" style="margin-top:16px">
+
+  <div class="sectionTitle">
+    Environmental Data
+  </div>
+
+  <div class="inputs">
+
+    <div>
+      <label class="muted">
+        Rainfall (mm)
+      </label>
+
+      <input
+        id="rain"
+        type="number"
+        min="0"
+        step="0.1"
+        placeholder="Example: 12"
+      >
+    </div>
+
+
+    <div>
+      <label class="muted">
+        Water Level (cm)
+      </label>
+
+      <input
+        id="water"
+        type="number"
+        min="0"
+        step="0.1"
+        placeholder="Example: 80"
+      >
+    </div>
+
+  </div>
+
+
+  <div class="notice">
+
+    Flood-risk status is a prototype indicator based on
+    entered environmental values and detected objects.
+    It is <b>not an official flood warning system.</b>
+
+  </div>
+
+</section>
+
+</main>
+
+
+<aside>
+
+<section class="card">
+
+<div class="sectionTitle">
+Live Overview
 </div>
 
-<div class="camera">
-<video id="video" autoplay playsinline muted></video>
-</div>
 
-<button onclick="startCamera()">
-📷 Start Camera
-</button>
-
-<button class="stop" onclick="stopCamera()">
-⏹ Stop Camera
-</button>
-
-</div>
-
-
-<div class="card">
-
-<h2>🤖 AI Detection</h2>
-
-<div class="stats">
+<div class="statgrid">
 
 <div class="stat">
-<div id="count" class="number">0</div>
-<div class="label">Potential Trash</div>
+
+<div class="label">
+Trash-class objects
 </div>
+
+<div class="value" id="count">
+0
+</div>
+
+</div>
+
 
 <div class="stat">
-<div id="risk" class="number">LOW</div>
-<div class="label">Risk Status</div>
+
+<div class="label">
+Highest confidence
+</div>
+
+<div class="value" id="confidence">
+—
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div class="label">
+Monitoring time
+</div>
+
+<div class="value" id="duration">
+00:00
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div class="label">
+Location
+</div>
+
+<div
+class="value"
+id="location"
+style="font-size:13px"
+>
+—
 </div>
 
 </div>
@@ -156,206 +492,901 @@ Loading AI model...
 </div>
 
 
-<div class="card">
+<div class="sectionTitle">
+Flood-Risk Indicator
+</div>
 
-<h2>📊 Detection Log</h2>
 
-<div id="log">
-System starting...
+<div class="risk">
+
+<strong id="risk">
+LOW
+</strong>
+
+<small id="riskReason">
+Waiting for monitoring data.
+</small>
+
+</div>
+
+
+<div class="sectionTitle">
+Detected Objects
+</div>
+
+<div id="objects">
+
+<div class="muted">
+No objects detected yet.
 </div>
 
 </div>
 
 
-<div class="card">
+<div class="sectionTitle">
+Detection History
+</div>
 
-<h2>🌊 Environmental Monitoring</h2>
+<div class="history" id="history">
 
-<p>
-EcoSort AI monitors waterways for visible waste
-and provides a prototype environmental risk indicator.
-</p>
-
-<p>Future features:</p>
-
-<ul>
-<li>🌧️ Rainfall monitoring</li>
-<li>🌊 Water-level sensors</li>
-<li>📍 GPS location</li>
-<li>🚨 Automatic alerts</li>
-<li>🤖 Autonomous cleanup boat</li>
-</ul>
+<div class="muted">
+No scans yet.
+</div>
 
 </div>
+
+</section>
+
+</aside>
+
+</div>
+
+
+<footer>
+EcoSort AI v2 • Browser-based prototype • TensorFlow.js + COCO-SSD
+</footer>
 
 </div>
 
 
 <script>
 
-let model;
-let stream;
-let running=false;
+const video =
+document.getElementById("video");
 
-const video=document.getElementById("video");
-const status=document.getElementById("status");
-const count=document.getElementById("count");
-const risk=document.getElementById("risk");
-const log=document.getElementById("log");
+const canvas =
+document.getElementById("overlay");
+
+const ctx =
+canvas.getContext("2d");
+
+const startBtn =
+document.getElementById("startBtn");
+
+const scanBtn =
+document.getElementById("scanBtn");
+
+const stopBtn =
+document.getElementById("stopBtn");
+
+const aiStatus =
+document.getElementById("aiStatus");
+
+const modelBadge =
+document.getElementById("modelBadge");
+
+const liveDot =
+document.getElementById("liveDot");
+
+const liveText =
+document.getElementById("liveText");
+
+const countEl =
+document.getElementById("count");
+
+const confidenceEl =
+document.getElementById("confidence");
+
+const durationEl =
+document.getElementById("duration");
+
+const objectsEl =
+document.getElementById("objects");
+
+const historyEl =
+document.getElementById("history");
+
+const locationEl =
+document.getElementById("location");
+
+const riskEl =
+document.getElementById("risk");
+
+const riskReasonEl =
+document.getElementById("riskReason");
+
+
+let model = null;
+
+let stream = null;
+
+let running = false;
+
+let startedAt = null;
+
+let lastPredictions = [];
+
+
+let history =
+JSON.parse(
+localStorage.getItem("ecosortHistory") || "[]"
+);
+
+
+/*
+  COCO-SSD does NOT have a complete
+  garbage classification system.
+
+  These classes are treated as
+  potentially relevant objects.
+*/
+
+const TRASH_CLASSES =
+new Set([
+  "bottle",
+  "cup",
+  "wine glass",
+  "bowl",
+  "backpack",
+  "handbag",
+  "suitcase"
+]);
+
+
+function prettyName(name){
+
+  return name
+    .replace("wine glass","glass");
+
+}
+
+
+function drawBoxes(predictions){
+
+  if(!video.videoWidth)
+    return;
+
+  canvas.width =
+    video.videoWidth;
+
+  canvas.height =
+    video.videoHeight;
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+
+  predictions.forEach(p => {
+
+    const [
+      x,
+      y,
+      w,
+      h
+    ] = p.bbox;
+
+
+    const isTrash =
+      TRASH_CLASSES.has(p.class);
+
+
+    ctx.lineWidth = 3;
+
+    ctx.strokeStyle =
+      isTrash
+      ? "#36d399"
+      : "#60a5fa";
+
+
+    ctx.strokeRect(
+      x,
+      y,
+      w,
+      h
+    );
+
+
+    const label =
+      `${prettyName(p.class)} ${Math.round(p.score * 100)}%`;
+
+
+    ctx.font =
+      "bold 14px Arial";
+
+
+    const width =
+      ctx.measureText(label).width + 12;
+
+
+    ctx.fillStyle =
+      isTrash
+      ? "#36d399"
+      : "#60a5fa";
+
+
+    ctx.fillRect(
+      x,
+      Math.max(0,y-23),
+      width,
+      23
+    );
+
+
+    ctx.fillStyle =
+      "#06111d";
+
+
+    ctx.fillText(
+      label,
+      x + 6,
+      Math.max(15,y-7)
+    );
+
+  });
+
+}
+
+
+function updateOverview(predictions){
+
+  lastPredictions =
+    predictions;
+
+
+  const trash =
+    predictions.filter(
+      p => TRASH_CLASSES.has(p.class)
+    );
+
+
+  countEl.textContent =
+    trash.length;
+
+
+  const highest =
+    predictions.reduce(
+      (max,p) =>
+        Math.max(max,p.score),
+      0
+    );
+
+
+  confidenceEl.textContent =
+    highest
+    ? Math.round(highest * 100) + "%"
+    : "—";
+
+
+  if(!predictions.length){
+
+    objectsEl.innerHTML =
+      `<div class="muted">
+        No recognizable objects detected.
+      </div>`;
+
+  }else{
+
+    const counts = {};
+
+    predictions.forEach(p => {
+
+      counts[p.class] =
+        (counts[p.class] || 0) + 1;
+
+    });
+
+
+    objectsEl.innerHTML =
+      Object.entries(counts)
+      .map(([name,total]) => `
+
+        <div class="row">
+
+          <span>
+            ${prettyName(name)}
+          </span>
+
+          <b>
+            ${total}
+          </b>
+
+        </div>
+
+      `)
+      .join("");
+
+  }
+
+
+  updateRisk(trash.length);
+
+}
+
+
+function updateRisk(trashCount){
+
+  const rainfall =
+    Number(
+      document.getElementById("rain").value
+    ) || 0;
+
+
+  const water =
+    Number(
+      document.getElementById("water").value
+    ) || 0;
+
+
+  let score =
+    trashCount * 2;
+
+
+  if(rainfall >= 10)
+    score += 2;
+
+  if(rainfall >= 25)
+    score += 3;
+
+  if(water >= 50)
+    score += 2;
+
+  if(water >= 100)
+    score += 3;
+
+
+  let level = "LOW";
+
+  let reason =
+    "Current inputs indicate a low prototype risk level.";
+
+
+  if(score >= 8){
+
+    level = "HIGH";
+
+    reason =
+      "Multiple monitoring factors are elevated. Continue monitoring the area.";
+
+  }
+
+  else if(score >= 4){
+
+    level = "MEDIUM";
+
+    reason =
+      "Some monitoring factors are elevated. Continue observing the area.";
+
+  }
+
+
+  riskEl.textContent =
+    level;
+
+  riskReasonEl.textContent =
+    reason;
+
+
+  if(level === "HIGH"){
+
+    riskEl.parentElement.style.borderColor =
+      "#fb7185";
+
+  }
+
+  else if(level === "MEDIUM"){
+
+    riskEl.parentElement.style.borderColor =
+      "#fbbf24";
+
+  }
+
+  else{
+
+    riskEl.parentElement.style.borderColor =
+      "#ffffff12";
+
+  }
+
+}
 
 
 async function loadAI(){
 
-    try{
+  try{
 
-        model=await cocoSsd.load();
+    aiStatus.textContent =
+      "Loading AI...";
 
-        status.innerHTML=
-        "✅ AI model loaded. Ready to scan.";
 
-        log.innerHTML=
-        "AI model loaded successfully.";
+    model =
+      await cocoSsd.load();
 
-    }catch(error){
 
-        status.innerHTML=
-        "❌ AI failed to load.";
+    modelBadge.textContent =
+      "AI: READY";
 
-        log.innerHTML=
-        error.message;
 
-    }
+    aiStatus.textContent =
+      "AI READY";
+
+
+  }catch(error){
+
+    console.error(error);
+
+
+    modelBadge.textContent =
+      "AI: ERROR";
+
+
+    aiStatus.textContent =
+      "AI failed to load";
+
+  }
 
 }
 
 
 async function startCamera(){
 
-    try{
+  try{
 
-        stream=await navigator.mediaDevices.getUserMedia({
+    if(!window.isSecureContext){
 
-            video:{
-                facingMode:{
-                    ideal:"environment"
-                }
-            },
+      alert(
+        "Camera access requires HTTPS. Open your GitHub Pages website."
+      );
 
-            audio:false
-
-        });
-
-        video.srcObject=stream;
-
-        running=true;
-
-        status.innerHTML=
-        "🟢 Camera connected. AI scanning...";
-
-        log.innerHTML=
-        "Camera connected.<br>AI scanning started.";
-
-        scan();
-
-    }catch(error){
-
-        status.innerHTML=
-        "❌ Camera error: "+error.name;
-
-        log.innerHTML=
-        "Camera error: "+error.message;
+      return;
 
     }
+
+
+    if(
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ){
+
+      alert(
+        "This browser does not provide camera access."
+      );
+
+      return;
+
+    }
+
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+
+        video:{
+          facingMode:{
+            ideal:"environment"
+          },
+
+          width:{
+            ideal:1280
+          },
+
+          height:{
+            ideal:720
+          }
+        },
+
+        audio:false
+
+      });
+
+
+    video.srcObject =
+      stream;
+
+
+    running = true;
+
+    startedAt =
+      Date.now();
+
+
+    liveDot.classList.add("on");
+
+    liveText.textContent =
+      "CAMERA LIVE";
+
+
+    startBtn.disabled = true;
+
+    stopBtn.disabled = false;
+
+    scanBtn.disabled = false;
+
+
+    detectLoop();
+
+
+  }catch(error){
+
+    console.error(error);
+
+
+    alert(
+      "Camera could not start: " +
+      error.name +
+      "\\n\\nAllow camera permission in Chrome site settings and try again."
+    );
+
+  }
 
 }
 
 
 function stopCamera(){
 
-    running=false;
+  running = false;
 
-    if(stream){
 
-        stream.getTracks().forEach(
-            track=>track.stop()
+  if(stream){
+
+    stream
+      .getTracks()
+      .forEach(track =>
+        track.stop()
+      );
+
+  }
+
+
+  stream = null;
+
+  video.srcObject = null;
+
+
+  liveDot.classList.remove("on");
+
+  liveText.textContent =
+    "CAMERA OFF";
+
+
+  startBtn.disabled = false;
+
+  stopBtn.disabled = true;
+
+  scanBtn.disabled = true;
+
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+}
+
+
+async function detectLoop(){
+
+  if(!running)
+    return;
+
+
+  if(
+    model &&
+    video.readyState >= 2
+  ){
+
+    try{
+
+      const predictions =
+        await model.detect(
+          video,
+          20,
+          0.5
         );
+
+
+      drawBoxes(
+        predictions
+      );
+
+
+      updateOverview(
+        predictions
+      );
+
+
+    }catch(error){
+
+      console.error(error);
 
     }
 
-    video.srcObject=null;
+  }
 
-    status.innerHTML=
-    "Camera stopped.";
+
+  if(running)
+    requestAnimationFrame(
+      detectLoop
+    );
 
 }
 
 
-async function scan(){
+function scanNow(){
 
-    if(!running || !model){
+  if(!lastPredictions.length){
 
-        return;
+    addHistory(
+      "No recognizable objects",
+      0
+    );
 
-    }
+    return;
 
-    const predictions=
-        await model.detect(video);
-
-    /*
-       COCO-SSD can recognize objects such as
-       bottles and cups.
-
-       These are being treated as
-       potential litter for this prototype.
-    */
-
-    const trash=
-        predictions.filter(
-            item =>
-            item.class==="bottle" ||
-            item.class==="cup"
-        );
-
-    count.innerHTML=trash.length;
+  }
 
 
-    if(trash.length>=5){
-
-        risk.innerHTML="HIGH";
-
-    }else if(trash.length>=2){
-
-        risk.innerHTML="MEDIUM";
-
-    }else{
-
-        risk.innerHTML="LOW";
-
-    }
+  const trash =
+    lastPredictions.filter(
+      p => TRASH_CLASSES.has(p.class)
+    );
 
 
-    if(trash.length>0){
-
-        log.innerHTML=
-        "⚠️ Potential litter detected: "
-        +trash.length+
-        "<br>Objects: "+
-        trash.map(x=>x.class).join(", ");
-
-    }else{
-
-        log.innerHTML=
-        "🔎 No potential litter detected.";
-
-    }
+  const names =
+    trash.length
+    ? trash
+        .map(
+          p => prettyName(p.class)
+        )
+        .join(", ")
+    : "No trash-class objects";
 
 
-    setTimeout(scan,500);
+  addHistory(
+    names,
+    trash.length
+  );
 
 }
 
+
+function addHistory(
+  text,
+  count
+){
+
+  const item = {
+
+    time:
+      new Date()
+      .toLocaleTimeString(),
+
+    text:text,
+
+    count:count
+
+  };
+
+
+  history.unshift(
+    item
+  );
+
+
+  history =
+    history.slice(
+      0,
+      30
+    );
+
+
+  localStorage.setItem(
+    "ecosortHistory",
+    JSON.stringify(history)
+  );
+
+
+  renderHistory();
+
+}
+
+
+function renderHistory(){
+
+  if(!history.length){
+
+    historyEl.innerHTML =
+      `<div class="muted">
+        No scans yet.
+      </div>`;
+
+    return;
+
+  }
+
+
+  historyEl.innerHTML =
+    history.map(h => `
+
+      <div class="historyItem">
+
+        <b>
+          ${h.count}
+          object${h.count === 1 ? "" : "s"}
+        </b>
+
+        • ${h.time}
+
+        <br>
+
+        <span class="muted">
+          ${h.text}
+        </span>
+
+      </div>
+
+    `)
+    .join("");
+
+}
+
+
+document
+.getElementById("locationBtn")
+.onclick = () => {
+
+  if(!navigator.geolocation){
+
+    alert(
+      "Geolocation is not supported."
+    );
+
+    return;
+
+  }
+
+
+  locationEl.textContent =
+    "Getting...";
+
+
+  navigator.geolocation.getCurrentPosition(
+
+    position => {
+
+      locationEl.textContent =
+
+        position.coords.latitude
+        .toFixed(4)
+        + ", "
+        +
+        position.coords.longitude
+        .toFixed(4);
+
+    },
+
+    () => {
+
+      locationEl.textContent =
+        "Denied";
+
+      alert(
+        "Location permission was denied."
+      );
+
+    },
+
+    {
+      enableHighAccuracy:true,
+      timeout:10000
+    }
+
+  );
+
+};
+
+
+document
+.getElementById("clearBtn")
+.onclick = () => {
+
+  history = [];
+
+  localStorage.removeItem(
+    "ecosortHistory"
+  );
+
+  renderHistory();
+
+};
+
+
+["rain","water"].forEach(id => {
+
+  document
+  .getElementById(id)
+  .addEventListener(
+    "input",
+    () => {
+
+      updateRisk(
+        lastPredictions.filter(
+          p => TRASH_CLASSES.has(p.class)
+        ).length
+      );
+
+    }
+  );
+
+});
+
+
+startBtn.onclick =
+  startCamera;
+
+stopBtn.onclick =
+  stopCamera;
+
+scanBtn.onclick =
+  scanNow;
+
+
+renderHistory();
 
 loadAI();
+
+
+setInterval(
+  () => {
+
+    if(!startedAt){
+
+      durationEl.textContent =
+        "00:00";
+
+      return;
+
+    }
+
+
+    const seconds =
+      Math.floor(
+        (Date.now() - startedAt)
+        / 1000
+      );
+
+
+    durationEl.textContent =
+
+      String(
+        Math.floor(seconds / 60)
+      ).padStart(2,"0")
+
+      +
+
+      ":" +
+
+      String(
+        seconds % 60
+      ).padStart(2,"0");
+
+  },
+  1000
+);
 
 </script>
 
