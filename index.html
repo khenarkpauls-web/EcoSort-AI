@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>EcoSort AI</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+<style>
+body{
+    margin:0;
+    background:#07111f;
+    color:white;
+    font-family:Arial,sans-serif;
+}
+
+.container{
+    max-width:700px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:#101f34;
+    border-radius:20px;
+    padding:20px;
+    margin-bottom:20px;
+}
+
+h1{
+    text-align:center;
+    font-size:36px;
+}
+
+.subtitle{
+    text-align:center;
+    color:#9fb0c5;
+}
+
+.camera{
+    background:black;
+    border-radius:16px;
+    overflow:hidden;
+    margin-top:20px;
+}
+
+video{
+    width:100%;
+    display:block;
+}
+
+button{
+    width:100%;
+    padding:16px;
+    margin-top:12px;
+    border:0;
+    border-radius:14px;
+    background:#2878ff;
+    color:white;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.stop{
+    background:#263f67;
+}
+
+.status{
+    background:#172943;
+    padding:15px;
+    border-radius:12px;
+    margin-top:15px;
+    color:#65e6a5;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+.stat{
+    background:#172943;
+    padding:18px;
+    border-radius:15px;
+}
+
+.number{
+    font-size:32px;
+    font-weight:bold;
+}
+
+.label{
+    color:#9fb0c5;
+}
+
+#log{
+    color:#9fb0c5;
+    line-height:1.7;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>🌱 EcoSort AI</h1>
+
+<div class="subtitle">
+AI Environmental Monitoring System
+</div>
+
+<div id="status" class="status">
+Loading AI model...
+</div>
+
+<div class="camera">
+<video id="video" autoplay playsinline muted></video>
+</div>
+
+<button onclick="startCamera()">
+📷 Start Camera
+</button>
+
+<button class="stop" onclick="stopCamera()">
+⏹ Stop Camera
+</button>
+
+</div>
+
+
+<div class="card">
+
+<h2>🤖 AI Detection</h2>
+
+<div class="stats">
+
+<div class="stat">
+<div id="count" class="number">0</div>
+<div class="label">Potential Trash</div>
+</div>
+
+<div class="stat">
+<div id="risk" class="number">LOW</div>
+<div class="label">Risk Status</div>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h2>📊 Detection Log</h2>
+
+<div id="log">
+System starting...
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h2>🌊 Environmental Monitoring</h2>
+
+<p>
+EcoSort AI monitors waterways for visible waste
+and provides a prototype environmental risk indicator.
+</p>
+
+<p>Future features:</p>
+
+<ul>
+<li>🌧️ Rainfall monitoring</li>
+<li>🌊 Water-level sensors</li>
+<li>📍 GPS location</li>
+<li>🚨 Automatic alerts</li>
+<li>🤖 Autonomous cleanup boat</li>
+</ul>
+
+</div>
+
+</div>
+
+
+<script>
+
+let model;
+let stream;
+let running=false;
+
+const video=document.getElementById("video");
+const status=document.getElementById("status");
+const count=document.getElementById("count");
+const risk=document.getElementById("risk");
+const log=document.getElementById("log");
+
+
+async function loadAI(){
+
+    try{
+
+        model=await cocoSsd.load();
+
+        status.innerHTML=
+        "✅ AI model loaded. Ready to scan.";
+
+        log.innerHTML=
+        "AI model loaded successfully.";
+
+    }catch(error){
+
+        status.innerHTML=
+        "❌ AI failed to load.";
+
+        log.innerHTML=
+        error.message;
+
+    }
+
+}
+
+
+async function startCamera(){
+
+    try{
+
+        stream=await navigator.mediaDevices.getUserMedia({
+
+            video:{
+                facingMode:{
+                    ideal:"environment"
+                }
+            },
+
+            audio:false
+
+        });
+
+        video.srcObject=stream;
+
+        running=true;
+
+        status.innerHTML=
+        "🟢 Camera connected. AI scanning...";
+
+        log.innerHTML=
+        "Camera connected.<br>AI scanning started.";
+
+        scan();
+
+    }catch(error){
+
+        status.innerHTML=
+        "❌ Camera error: "+error.name;
+
+        log.innerHTML=
+        "Camera error: "+error.message;
+
+    }
+
+}
+
+
+function stopCamera(){
+
+    running=false;
+
+    if(stream){
+
+        stream.getTracks().forEach(
+            track=>track.stop()
+        );
+
+    }
+
+    video.srcObject=null;
+
+    status.innerHTML=
+    "Camera stopped.";
+
+}
+
+
+async function scan(){
+
+    if(!running || !model){
+
+        return;
+
+    }
+
+    const predictions=
+        await model.detect(video);
+
+    /*
+       COCO-SSD can recognize objects such as
+       bottles and cups.
+
+       These are being treated as
+       potential litter for this prototype.
+    */
+
+    const trash=
+        predictions.filter(
+            item =>
+            item.class==="bottle" ||
+            item.class==="cup"
+        );
+
+    count.innerHTML=trash.length;
+
+
+    if(trash.length>=5){
+
+        risk.innerHTML="HIGH";
+
+    }else if(trash.length>=2){
+
+        risk.innerHTML="MEDIUM";
+
+    }else{
+
+        risk.innerHTML="LOW";
+
+    }
+
+
+    if(trash.length>0){
+
+        log.innerHTML=
+        "⚠️ Potential litter detected: "
+        +trash.length+
+        "<br>Objects: "+
+        trash.map(x=>x.class).join(", ");
+
+    }else{
+
+        log.innerHTML=
+        "🔎 No potential litter detected.";
+
+    }
+
+
+    setTimeout(scan,500);
+
+}
+
+
+loadAI();
+
+</script>
+
+</body>
+</html>
