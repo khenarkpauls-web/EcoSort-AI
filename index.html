@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
 <title>EcoSort AI</title>
 
+<!-- TensorFlow.js -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+<!-- COCO-SSD -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 
+
 <style>
+
+/* =========================
+   GLOBAL
+========================= */
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -17,474 +32,1251 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
     background: #f4f7f5;
+
     color: #17221b;
+
 }
 
+
+/* =========================
+   HEADER
+========================= */
+
 header {
+
     background: #163d2a;
+
     color: white;
+
     padding: 18px 20px;
+
     display: flex;
+
     justify-content: space-between;
+
     align-items: center;
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 100;
+
 }
 
 .logo {
+
     font-size: 22px;
+
     font-weight: bold;
+
 }
 
 .status {
+
     font-size: 13px;
+
     padding: 7px 12px;
+
     border-radius: 20px;
+
     background: #315b44;
+
 }
 
+
+/* =========================
+   MAIN
+========================= */
+
 .container {
+
     max-width: 1100px;
+
     margin: auto;
+
     padding: 20px;
+
 }
 
 .hero {
+
     margin-bottom: 20px;
+
 }
 
 .hero h1 {
+
     font-size: 30px;
-    margin-bottom: 6px;
+
+    margin-bottom: 7px;
+
 }
 
 .hero p {
+
     color: #657169;
+
+    line-height: 1.5;
+
 }
 
+
+/* =========================
+   CAMERA
+========================= */
+
 .camera-card {
+
     background: white;
+
     border-radius: 18px;
+
     padding: 15px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+
+    box-shadow:
+        0 5px 20px
+        rgba(0,0,0,0.08);
+
 }
 
 .camera {
+
     position: relative;
+
     width: 100%;
+
     aspect-ratio: 16 / 9;
+
     background: #111;
+
     border-radius: 14px;
+
     overflow: hidden;
+
 }
 
 video {
+
     width: 100%;
+
     height: 100%;
+
     object-fit: cover;
+
 }
 
 canvas {
+
     position: absolute;
+
     inset: 0;
+
     width: 100%;
+
     height: 100%;
+
 }
 
 .loading {
+
     position: absolute;
+
     inset: 0;
+
     display: flex;
+
     align-items: center;
+
     justify-content: center;
+
     color: white;
-    background: rgba(0,0,0,0.55);
+
+    background:
+        rgba(0,0,0,0.6);
+
     font-size: 17px;
+
+    text-align: center;
+
+    padding: 20px;
+
     z-index: 5;
+
 }
 
+
+/* =========================
+   CONTROLS
+========================= */
+
 .controls {
+
     display: flex;
+
     gap: 10px;
+
     margin-top: 15px;
+
     flex-wrap: wrap;
+
 }
 
 button {
+
     border: none;
+
     padding: 12px 18px;
+
     border-radius: 10px;
+
     cursor: pointer;
+
     font-weight: bold;
+
     font-size: 14px;
+
 }
 
 .start {
+
     background: #1f7a4d;
+
     color: white;
+
 }
 
 .stop {
+
     background: #d9534f;
+
     color: white;
+
 }
 
 button:disabled {
+
     opacity: 0.5;
+
     cursor: not-allowed;
+
 }
 
+
+/* =========================
+   STATS
+========================= */
+
 .stats {
+
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
     gap: 12px;
+
     margin-top: 18px;
+
 }
 
 .stat {
+
     background: white;
+
     padding: 18px;
+
     border-radius: 14px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+
+    box-shadow:
+        0 4px 15px
+        rgba(0,0,0,0.05);
+
 }
 
 .stat-title {
+
     font-size: 13px;
+
     color: #737d76;
+
 }
 
 .stat-value {
+
     font-size: 27px;
+
     font-weight: bold;
+
     margin-top: 6px;
+
 }
 
+
+/* =========================
+   DASHBOARD
+========================= */
+
 .dashboard {
+
     display: grid;
-    grid-template-columns: 1fr 1fr;
+
+    grid-template-columns:
+        1fr 1fr;
+
     gap: 15px;
+
     margin-top: 18px;
+
 }
 
 .panel {
+
     background: white;
+
     padding: 20px;
+
     border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+
+    box-shadow:
+        0 4px 15px
+        rgba(0,0,0,0.05);
+
 }
 
 .panel h2 {
+
     font-size: 18px;
+
     margin-bottom: 15px;
+
 }
 
-.risk {
-    padding: 14px;
-    border-radius: 10px;
-    background: #eef5ef;
-}
 
-.risk strong {
-    display: block;
-    font-size: 22px;
-    margin-bottom: 4px;
-}
+/* =========================
+   DETECTION LIST
+========================= */
 
 .class-row {
+
     display: flex;
+
     justify-content: space-between;
-    padding: 9px 0;
-    border-bottom: 1px solid #eee;
+
+    align-items: center;
+
+    padding: 10px 0;
+
+    border-bottom:
+        1px solid #eee;
+
 }
 
 .class-row:last-child {
+
     border-bottom: none;
+
 }
+
+.class-name {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+}
+
+
+/* =========================
+   RISK
+========================= */
+
+.risk {
+
+    padding: 16px;
+
+    border-radius: 12px;
+
+    background: #eef5ef;
+
+    transition: 0.3s;
+
+}
+
+.risk strong {
+
+    display: block;
+
+    font-size: 22px;
+
+    margin-bottom: 5px;
+
+}
+
+.risk span {
+
+    color: #59645d;
+
+    font-size: 14px;
+
+}
+
+
+/* =========================
+   INPUTS
+========================= */
+
+.input-group {
+
+    margin-top: 15px;
+
+}
+
+.input-group label {
+
+    display: block;
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+    margin-bottom: 6px;
+
+}
+
+select {
+
+    width: 100%;
+
+    padding: 11px;
+
+    border:
+        1px solid #ddd;
+
+    border-radius: 8px;
+
+    background: white;
+
+    font-size: 14px;
+
+}
+
+
+/* =========================
+   FLOOD SCORE
+========================= */
+
+.score-box {
+
+    margin-top: 18px;
+
+    padding: 15px;
+
+    border-radius: 10px;
+
+    background: #f3f5f3;
+
+    text-align: center;
+
+}
+
+.score-number {
+
+    font-size: 35px;
+
+    font-weight: bold;
+
+    margin-top: 5px;
+
+}
+
+
+/* =========================
+   INFORMATION BOX
+========================= */
+
+.info {
+
+    margin-top: 18px;
+
+    padding: 14px;
+
+    border-radius: 10px;
+
+    background: #f4f7f5;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
+    color: #5e6861;
+
+}
+
+
+/* =========================
+   ALERT
+========================= */
+
+.alert {
+
+    display: none;
+
+    margin-top: 15px;
+
+    padding: 14px;
+
+    border-radius: 10px;
+
+    font-weight: bold;
+
+}
+
+
+/* =========================
+   FOOTER
+========================= */
 
 footer {
+
     text-align: center;
+
     color: #788078;
+
     font-size: 12px;
-    padding: 25px;
+
+    padding: 30px 20px;
+
 }
 
+
+/* =========================
+   MOBILE
+========================= */
+
 @media (max-width: 700px) {
+
     .stats {
-        grid-template-columns: repeat(2, 1fr);
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
     }
 
     .dashboard {
-        grid-template-columns: 1fr;
+
+        grid-template-columns:
+            1fr;
+
     }
 
     .hero h1 {
+
         font-size: 25px;
+
     }
+
+    .stat-value {
+
+        font-size: 23px;
+
+    }
+
 }
+
 </style>
+
 </head>
+
 
 <body>
 
+
+<!-- =========================
+     HEADER
+========================= -->
+
 <header>
-    <div class="logo">🌱 EcoSort AI</div>
-    <div class="status" id="systemStatus">Loading AI...</div>
+
+    <div class="logo">
+        🌱 EcoSort AI
+    </div>
+
+    <div
+        class="status"
+        id="systemStatus"
+    >
+        Loading AI...
+    </div>
+
 </header>
+
+
+<!-- =========================
+     MAIN
+========================= -->
 
 <div class="container">
 
+
+    <!-- HERO -->
+
     <section class="hero">
-        <h1>Smart Waste Detection</h1>
-        <p>Use your camera to detect and monitor visible waste.</p>
+
+        <h1>
+            Smart Waste & Flood Monitoring
+        </h1>
+
+        <p>
+            EcoSort AI uses computer vision to
+            detect visible waste and combines
+            environmental conditions to generate
+            a prototype flood-risk indicator.
+        </p>
+
     </section>
+
+
+    <!-- =========================
+         CAMERA
+    ========================= -->
 
     <div class="camera-card">
 
         <div class="camera">
 
-            <video id="video" autoplay muted playsinline></video>
+            <video
+                id="video"
+                autoplay
+                muted
+                playsinline
+            ></video>
 
-            <canvas id="canvas"></canvas>
+            <canvas
+                id="canvas"
+            ></canvas>
 
-            <div class="loading" id="loading">
+            <div
+                class="loading"
+                id="loading"
+            >
                 Loading AI model...
             </div>
 
         </div>
 
+
         <div class="controls">
 
-            <button class="start" id="startBtn" disabled>
-                Start Camera
+            <button
+                class="start"
+                id="startBtn"
+                disabled
+            >
+                📷 Start Camera
             </button>
 
-            <button class="stop" id="stopBtn" disabled>
-                Stop Camera
+            <button
+                class="stop"
+                id="stopBtn"
+                disabled
+            >
+                ⛔ Stop Camera
             </button>
 
         </div>
 
+
+        <div
+            class="alert"
+            id="warningAlert"
+        >
+            ⚠️ High environmental warning level detected.
+        </div>
+
     </div>
+
+
+    <!-- =========================
+         QUICK STATS
+    ========================= -->
 
     <div class="stats">
 
-        <div class="stat">
-            <div class="stat-title">Objects Detected</div>
-            <div class="stat-value" id="total">0</div>
-        </div>
 
         <div class="stat">
-            <div class="stat-title">Highest Confidence</div>
-            <div class="stat-value" id="confidence">0%</div>
+
+            <div class="stat-title">
+                Objects Detected
+            </div>
+
+            <div
+                class="stat-value"
+                id="total"
+            >
+                0
+            </div>
+
         </div>
 
-        <div class="stat">
-            <div class="stat-title">Current Scan</div>
-            <div class="stat-value" id="scanStatus">OFF</div>
-        </div>
 
         <div class="stat">
-            <div class="stat-title">Risk Level</div>
-            <div class="stat-value" id="riskLevel">LOW</div>
+
+            <div class="stat-title">
+                Highest Confidence
+            </div>
+
+            <div
+                class="stat-value"
+                id="confidence"
+            >
+                0%
+            </div>
+
         </div>
+
+
+        <div class="stat">
+
+            <div class="stat-title">
+                Current Scan
+            </div>
+
+            <div
+                class="stat-value"
+                id="scanStatus"
+            >
+                OFF
+            </div>
+
+        </div>
+
+
+        <div class="stat">
+
+            <div class="stat-title">
+                Flood Risk
+            </div>
+
+            <div
+                class="stat-value"
+                id="riskLevel"
+            >
+                LOW
+            </div>
+
+        </div>
+
 
     </div>
 
+
+    <!-- =========================
+         DASHBOARD
+    ========================= -->
+
     <div class="dashboard">
+
+
+        <!-- WASTE -->
 
         <div class="panel">
 
-            <h2>♻️ Detected Waste</h2>
+            <h2>
+                ♻️ Detected Waste
+            </h2>
+
 
             <div class="class-row">
-                <span>Plastic Bottle</span>
-                <strong id="bottle">0</strong>
+
+                <span class="class-name">
+                    🧴 Plastic Bottle
+                </span>
+
+                <strong id="bottle">
+                    0
+                </strong>
+
             </div>
 
-            <div class="class-row">
-                <span>Can</span>
-                <strong id="can">0</strong>
-            </div>
 
             <div class="class-row">
-                <span>Plastic Bag</span>
-                <strong id="bag">0</strong>
+
+                <span class="class-name">
+                    🥫 Can
+                </span>
+
+                <strong id="can">
+                    0
+                </strong>
+
             </div>
 
-            <div class="class-row">
-                <span>Wrapper</span>
-                <strong id="wrapper">0</strong>
-            </div>
 
             <div class="class-row">
-                <span>Paper / Cardboard</span>
-                <strong id="paper">0</strong>
+
+                <span class="class-name">
+                    🛍️ Plastic Bag
+                </span>
+
+                <strong id="bag">
+                    0
+                </strong>
+
             </div>
 
+
             <div class="class-row">
-                <span>Other Litter</span>
-                <strong id="other">0</strong>
+
+                <span class="class-name">
+                    🧻 Wrapper
+                </span>
+
+                <strong id="wrapper">
+                    0
+                </strong>
+
             </div>
+
+
+            <div class="class-row">
+
+                <span class="class-name">
+                    📄 Paper / Cardboard
+                </span>
+
+                <strong id="paper">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="class-row">
+
+                <span class="class-name">
+                    🗑️ Other Litter
+                </span>
+
+                <strong id="other">
+                    0
+                </strong>
+
+            </div>
+
 
         </div>
 
+
+        <!-- FLOOD MONITOR -->
+
         <div class="panel">
 
-            <h2>🌊 Environmental Status</h2>
+            <h2>
+                🌊 Flood Risk Monitor
+            </h2>
 
-            <div class="risk">
 
-                <strong id="riskText">
+            <div
+                class="risk"
+                id="floodRiskBox"
+            >
+
+                <strong
+                    id="floodRiskText"
+                >
                     LOW RISK
                 </strong>
 
-                <span id="riskDescription">
-                    No significant amount of detected waste.
+                <span
+                    id="floodRiskDescription"
+                >
+                    Current conditions are
+                    below the warning threshold.
                 </span>
 
             </div>
 
-            <br>
 
-            <p>
-                EcoSort AI analyzes visible objects from the camera
-                and counts detected waste to support environmental
-                monitoring.
-            </p>
+            <!-- RAINFALL -->
+
+            <div class="input-group">
+
+                <label>
+                    🌧️ Rainfall Intensity
+                </label>
+
+                <select
+                    id="rainfall"
+                >
+
+                    <option value="0">
+                        No Rain
+                    </option>
+
+                    <option value="1">
+                        Light Rain
+                    </option>
+
+                    <option value="2">
+                        Moderate Rain
+                    </option>
+
+                    <option value="3">
+                        Heavy Rain
+                    </option>
+
+                    <option value="4">
+                        Very Heavy Rain
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- WATER LEVEL -->
+
+            <div class="input-group">
+
+                <label>
+                    🌊 Water Level
+                </label>
+
+                <select
+                    id="waterLevel"
+                >
+
+                    <option value="0">
+                        Normal
+                    </option>
+
+                    <option value="1">
+                        Elevated
+                    </option>
+
+                    <option value="2">
+                        High
+                    </option>
+
+                    <option value="3">
+                        Critical
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- SCORE -->
+
+            <div class="score-box">
+
+                Flood Risk Score
+
+                <div
+                    class="score-number"
+                    id="floodScore"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="info">
+
+                <strong>
+                    Prototype Notice:
+                </strong>
+
+                This score is a prototype
+                decision-support indicator.
+                It is not an official flood
+                forecast and must be calibrated
+                using real rainfall, water-level,
+                drainage, and historical flood
+                data before real-world deployment.
+
+            </div>
 
         </div>
 
+
     </div>
+
 
 </div>
 
+
+<!-- =========================
+     FOOTER
+========================= -->
+
 <footer>
-    EcoSort AI • Environmental Waste Monitoring Prototype
+
+    EcoSort AI • Environmental Monitoring Prototype
+
 </footer>
+
+
 
 <script>
 
-let model;
+/* =========================================
+   VARIABLES
+========================================= */
+
+let model = null;
+
 let stream = null;
+
 let running = false;
 
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+let detecting = false;
 
-const loading = document.getElementById("loading");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
 
-const systemStatus = document.getElementById("systemStatus");
+const video =
+    document.getElementById("video");
 
-const totalElement = document.getElementById("total");
-const confidenceElement = document.getElementById("confidence");
-const scanStatus = document.getElementById("scanStatus");
-const riskLevel = document.getElementById("riskLevel");
+const canvas =
+    document.getElementById("canvas");
 
-const riskText = document.getElementById("riskText");
-const riskDescription = document.getElementById("riskDescription");
+const ctx =
+    canvas.getContext("2d");
+
+
+const loading =
+    document.getElementById("loading");
+
+const startBtn =
+    document.getElementById("startBtn");
+
+const stopBtn =
+    document.getElementById("stopBtn");
+
+
+const systemStatus =
+    document.getElementById("systemStatus");
+
+
+const totalElement =
+    document.getElementById("total");
+
+const confidenceElement =
+    document.getElementById("confidence");
+
+const scanStatus =
+    document.getElementById("scanStatus");
+
+const riskLevel =
+    document.getElementById("riskLevel");
+
+
+const warningAlert =
+    document.getElementById("warningAlert");
+
+
+/* =========================================
+   WASTE COUNTERS
+========================================= */
 
 const counters = {
-    bottle: document.getElementById("bottle"),
-    can: document.getElementById("can"),
-    bag: document.getElementById("bag"),
-    wrapper: document.getElementById("wrapper"),
-    paper: document.getElementById("paper"),
-    other: document.getElementById("other")
-};
 
+    bottle:
+        document.getElementById("bottle"),
 
-// COCO-SSD labels that can represent waste
-const wasteMapping = {
+    can:
+        document.getElementById("can"),
 
-    bottle: "bottle",
+    bag:
+        document.getElementById("bag"),
 
-    can: "can",
+    wrapper:
+        document.getElementById("wrapper"),
 
-    cup: "cup",
+    paper:
+        document.getElementById("paper"),
 
-    book: "paper",
-
-    bowl: "other",
-
-    handbag: "bag"
+    other:
+        document.getElementById("other")
 
 };
 
 
-// Load AI
+/* =========================================
+   FLOOD ELEMENTS
+========================================= */
+
+const rainfallInput =
+    document.getElementById("rainfall");
+
+const waterLevelInput =
+    document.getElementById("waterLevel");
+
+
+const floodScoreElement =
+    document.getElementById("floodScore");
+
+
+const floodRiskText =
+    document.getElementById(
+        "floodRiskText"
+    );
+
+
+const floodRiskDescription =
+    document.getElementById(
+        "floodRiskDescription"
+    );
+
+
+const floodRiskBox =
+    document.getElementById(
+        "floodRiskBox"
+    );
+
+
+/* =========================================
+   LOAD AI
+========================================= */
+
 async function loadAI() {
 
     try {
 
-        systemStatus.textContent = "Loading AI...";
+        systemStatus.textContent =
+            "Loading AI...";
 
-        model = await cocoSsd.load();
 
-        loading.style.display = "none";
+        model =
+            await cocoSsd.load();
 
-        systemStatus.textContent = "AI Ready";
 
-        startBtn.disabled = false;
+        loading.style.display =
+            "none";
 
-    } catch (error) {
+
+        systemStatus.textContent =
+            "AI Ready";
+
+
+        startBtn.disabled =
+            false;
+
+
+        /*
+         Initial calculation
+        */
+
+        calculateFloodRisk(0);
+
+
+    }
+
+    catch(error) {
 
         console.error(error);
+
 
         loading.textContent =
             "AI failed to load. Check your internet connection.";
 
-        systemStatus.textContent = "AI Error";
+
+        systemStatus.textContent =
+            "AI Error";
 
     }
 
 }
 
 
-// Start camera
+/* =========================================
+   START CAMERA
+========================================= */
+
 async function startCamera() {
+
+    if (!model) {
+
+        alert(
+            "AI model is still loading."
+        );
+
+        return;
+
+    }
+
 
     try {
 
-        stream = await navigator.mediaDevices.getUserMedia({
+        stream =
+            await navigator.mediaDevices.getUserMedia({
 
-            video: {
-                facingMode: {
-                    ideal: "environment"
+                video: {
+
+                    facingMode: {
+                        ideal: "environment"
+                    },
+
+                    width: {
+                        ideal: 1280
+                    },
+
+                    height: {
+                        ideal: 720
+                    }
+
                 },
-                width: {
-                    ideal: 1280
-                },
-                height: {
-                    ideal: 720
-                }
-            },
 
-            audio: false
+                audio: false
 
-        });
+            });
 
-        video.srcObject = stream;
 
-        running = true;
+        video.srcObject =
+            stream;
 
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
 
-        scanStatus.textContent = "ON";
+        running =
+            true;
 
-        systemStatus.textContent = "Scanning";
+
+        startBtn.disabled =
+            true;
+
+        stopBtn.disabled =
+            false;
+
+
+        scanStatus.textContent =
+            "ON";
+
+
+        systemStatus.textContent =
+            "Scanning";
+
 
         detectFrame();
 
-    } catch (error) {
+    }
+
+    catch(error) {
 
         console.error(error);
 
+
         alert(
-            "Camera access failed. Make sure camera permission is allowed and the website is running on HTTPS."
+            "Camera access failed. Allow camera permission and make sure the website uses HTTPS."
         );
 
     }
@@ -492,20 +1284,35 @@ async function startCamera() {
 }
 
 
-// Stop camera
+/* =========================================
+   STOP CAMERA
+========================================= */
+
 function stopCamera() {
 
-    running = false;
+    running =
+        false;
+
 
     if (stream) {
 
-        stream.getTracks().forEach(track => track.stop());
+        stream
+            .getTracks()
+            .forEach(track => {
 
-        stream = null;
+                track.stop();
+
+            });
+
+        stream =
+            null;
 
     }
 
-    video.srcObject = null;
+
+    video.srcObject =
+        null;
+
 
     ctx.clearRect(
         0,
@@ -514,40 +1321,96 @@ function stopCamera() {
         canvas.height
     );
 
-    startBtn.disabled = false;
-    stopBtn.disabled = true;
 
-    scanStatus.textContent = "OFF";
+    startBtn.disabled =
+        false;
 
-    systemStatus.textContent = "AI Ready";
+    stopBtn.disabled =
+        true;
+
+
+    scanStatus.textContent =
+        "OFF";
+
+
+    systemStatus.textContent =
+        "AI Ready";
 
 }
 
 
-// Detection loop
+/* =========================================
+   DETECTION LOOP
+========================================= */
+
 async function detectFrame() {
 
-    if (!running) return;
+    if (!running)
+        return;
 
-    if (video.readyState >= 2) {
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+    if (
+        video.readyState >= 2 &&
+        !detecting
+    ) {
 
-        const predictions =
-            await model.detect(video);
+        detecting =
+            true;
 
-        drawDetections(predictions);
+
+        try {
+
+            canvas.width =
+                video.videoWidth;
+
+            canvas.height =
+                video.videoHeight;
+
+
+            const predictions =
+                await model.detect(video);
+
+
+            drawDetections(
+                predictions
+            );
+
+        }
+
+        catch(error) {
+
+            console.error(
+                "Detection error:",
+                error
+            );
+
+        }
+
+
+        detecting =
+            false;
 
     }
 
-    requestAnimationFrame(detectFrame);
+
+    if (running) {
+
+        requestAnimationFrame(
+            detectFrame
+        );
+
+    }
 
 }
 
 
-// Draw detections
-function drawDetections(predictions) {
+/* =========================================
+   DRAW DETECTIONS
+========================================= */
+
+function drawDetections(
+    predictions
+) {
 
     ctx.clearRect(
         0,
@@ -556,297 +1419,39 @@ function drawDetections(predictions) {
         canvas.height
     );
 
-    let detectedWaste = [];
 
-    predictions.forEach(prediction => {
+    const detectedWaste = [];
 
-        const confidence =
-            prediction.score;
 
-        const className =
-            prediction.class.toLowerCase();
+    predictions.forEach(
+        prediction => {
 
-        if (confidence < 0.50) return;
+            const confidence =
+                prediction.score;
 
-        let mappedClass = null;
 
-        if (className === "bottle") {
+            const className =
+                prediction.class
+                    .toLowerCase();
 
-            mappedClass = "plastic_bottle";
 
-        }
+            /*
+             Only accept
+             reasonably confident
+             detections.
+            */
 
-        else if (
-            className === "can"
-        ) {
+            if (
+                confidence < 0.50
+            ) {
 
-            mappedClass = "can";
+                return;
 
-        }
+            }
 
-        else if (
-            className === "handbag"
-        ) {
 
-            mappedClass = "plastic_bag";
+            let mappedClass =
+                null;
 
-        }
 
-        else if (
-            className === "cup"
-        ) {
-
-            mappedClass = "wrapper_film";
-
-        }
-
-        else if (
-            className === "book"
-        ) {
-
-            mappedClass = "paper_cardboard";
-
-        }
-
-        else if (
-            className === "bowl"
-        ) {
-
-            mappedClass = "other_litter";
-
-        }
-
-        if (!mappedClass) return;
-
-        detectedWaste.push({
-            className: mappedClass,
-            score: confidence,
-            bbox: prediction.bbox
-        });
-
-    });
-
-
-    // Draw boxes
-    detectedWaste.forEach(item => {
-
-        const [
-            x,
-            y,
-            width,
-            height
-        ] = item.bbox;
-
-        ctx.lineWidth = 3;
-
-        ctx.strokeStyle = "#00ff88";
-
-        ctx.strokeRect(
-            x,
-            y,
-            width,
-            height
-        );
-
-        ctx.fillStyle =
-            "rgba(0,0,0,0.7)";
-
-        const label =
-            formatClass(item.className) +
-            " " +
-            Math.round(item.score * 100) +
-            "%";
-
-        ctx.font =
-            "bold 15px Arial";
-
-        const textWidth =
-            ctx.measureText(label).width;
-
-        ctx.fillRect(
-            x,
-            Math.max(0, y - 25),
-            textWidth + 12,
-            25
-        );
-
-        ctx.fillStyle = "white";
-
-        ctx.fillText(
-            label,
-            x + 6,
-            Math.max(17, y - 7)
-        );
-
-    });
-
-
-    updateDashboard(
-        detectedWaste
-    );
-
-}
-
-
-// Convert class names
-function formatClass(name) {
-
-    const names = {
-
-        plastic_bottle:
-            "Plastic Bottle",
-
-        can:
-            "Can",
-
-        plastic_bag:
-            "Plastic Bag",
-
-        wrapper_film:
-            "Wrapper",
-
-        paper_cardboard:
-            "Paper/Cardboard",
-
-        other_litter:
-            "Other Litter"
-
-    };
-
-    return names[name] || name;
-
-}
-
-
-// Update dashboard
-function updateDashboard(items) {
-
-    const counts = {
-
-        plastic_bottle: 0,
-        can: 0,
-        plastic_bag: 0,
-        wrapper_film: 0,
-        paper_cardboard: 0,
-        other_litter: 0
-
-    };
-
-    let highestConfidence = 0;
-
-    items.forEach(item => {
-
-        counts[item.className]++;
-
-        if (
-            item.score >
-            highestConfidence
-        ) {
-
-            highestConfidence =
-                item.score;
-
-        }
-
-    });
-
-
-    totalElement.textContent =
-        items.length;
-
-    confidenceElement.textContent =
-        Math.round(
-            highestConfidence * 100
-        ) + "%";
-
-
-    counters.bottle.textContent =
-        counts.plastic_bottle;
-
-    counters.can.textContent =
-        counts.can;
-
-    counters.bag.textContent =
-        counts.plastic_bag;
-
-    counters.wrapper.textContent =
-        counts.wrapper_film;
-
-    counters.paper.textContent =
-        counts.paper_cardboard;
-
-    counters.other.textContent =
-        counts.other_litter;
-
-
-    updateRisk(items.length);
-
-}
-
-
-// Environmental risk
-function updateRisk(total) {
-
-    let level;
-
-    if (total === 0) {
-
-        level = "LOW";
-
-        riskText.textContent =
-            "LOW RISK";
-
-        riskDescription.textContent =
-            "No significant amount of detected waste.";
-
-    }
-
-    else if (total <= 3) {
-
-        level = "MODERATE";
-
-        riskText.textContent =
-            "MODERATE RISK";
-
-        riskDescription.textContent =
-            "Some visible waste has been detected.";
-
-    }
-
-    else {
-
-        level = "HIGH";
-
-        riskText.textContent =
-            "HIGH WASTE LEVEL";
-
-        riskDescription.textContent =
-            "A large amount of visible waste has been detected.";
-
-    }
-
-    riskLevel.textContent =
-        level;
-
-}
-
-
-// Buttons
-startBtn.addEventListener(
-    "click",
-    startCamera
-);
-
-stopBtn.addEventListener(
-    "click",
-    stopCamera
-);
-
-
-// Start AI
-loadAI();
-
-</script>
-
-</body>
-</html>
+            
