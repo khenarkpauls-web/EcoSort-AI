@@ -3,1390 +3,848 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#07111f">
 
-<title>EcoSort AI v2</title>
+<title>EcoSort AI</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 
 <style>
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  background:linear-gradient(160deg,#06101d,#0b1c2f,#07111f);
-  color:#eef7ff;
-  font-family:Arial,Helvetica,sans-serif;
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-.app{
-  max-width:1100px;
-  margin:auto;
-  padding:18px;
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f7f5;
+    color: #17221b;
 }
 
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:18px;
+header {
+    background: #163d2a;
+    color: white;
+    padding: 18px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
+.logo {
+    font-size: 22px;
+    font-weight: bold;
 }
 
-.logo{
-  width:48px;
-  height:48px;
-  border-radius:14px;
-  background:#36d399;
-  display:grid;
-  place-items:center;
-  font-size:25px;
+.status {
+    font-size: 13px;
+    padding: 7px 12px;
+    border-radius: 20px;
+    background: #315b44;
 }
 
-h1{
-  margin:0;
-  font-size:23px;
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 20px;
 }
 
-.sub{
-  color:#8fa5bb;
-  font-size:12px;
-  margin-top:3px;
+.hero {
+    margin-bottom: 20px;
 }
 
-.badge{
-  background:#0c1a2a;
-  border:1px solid #ffffff18;
-  padding:8px 12px;
-  border-radius:20px;
-  font-size:12px;
+.hero h1 {
+    font-size: 30px;
+    margin-bottom: 6px;
 }
 
-.grid{
-  display:grid;
-  grid-template-columns:1.35fr .65fr;
-  gap:16px;
+.hero p {
+    color: #657169;
 }
 
-.card{
-  background:#0d1b2de8;
-  border:1px solid #ffffff12;
-  border-radius:20px;
-  padding:16px;
+.camera-card {
+    background: white;
+    border-radius: 18px;
+    padding: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
 }
 
-.camera{
-  position:relative;
-  overflow:hidden;
-  padding:0;
-  background:#02070c;
-  aspect-ratio:16/10;
+.camera {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #111;
+    border-radius: 14px;
+    overflow: hidden;
 }
 
-video{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  display:block;
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-#overlay{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  pointer-events:none;
+canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
 }
 
-.cameraTop{
-  position:absolute;
-  top:12px;
-  left:12px;
-  right:12px;
-  display:flex;
-  justify-content:space-between;
+.loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: rgba(0,0,0,0.55);
+    font-size: 17px;
+    z-index: 5;
 }
 
-.live,
-.status{
-  background:#0000009c;
-  padding:8px 11px;
-  border-radius:20px;
-  font-size:12px;
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
 }
 
-.dot{
-  display:inline-block;
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:#fb7185;
-  margin-right:6px;
+button {
+    border: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
 }
 
-.dot.on{
-  background:#36d399;
-  box-shadow:0 0 10px #36d399;
+.start {
+    background: #1f7a4d;
+    color: white;
 }
 
-.cameraBottom{
-  position:absolute;
-  bottom:12px;
-  left:12px;
-  right:12px;
-  display:flex;
-  gap:8px;
+.stop {
+    background: #d9534f;
+    color: white;
 }
 
-button{
-  border:0;
-  border-radius:12px;
-  padding:11px 14px;
-  font-weight:bold;
-  background:#36d399;
-  color:#06111d;
-  cursor:pointer;
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-button.secondary{
-  background:#172a40;
-  color:#eef7ff;
-  border:1px solid #ffffff12;
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 18px;
 }
 
-button:disabled{
-  opacity:.45;
+.stat {
+    background: white;
+    padding: 18px;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
-.controls{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:14px;
+.stat-title {
+    font-size: 13px;
+    color: #737d76;
 }
 
-.statgrid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
+.stat-value {
+    font-size: 27px;
+    font-weight: bold;
+    margin-top: 6px;
 }
 
-.stat{
-  background:#0a1727;
-  border:1px solid #ffffff12;
-  border-radius:15px;
-  padding:13px;
+.dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 18px;
 }
 
-.label{
-  color:#8fa5bb;
-  font-size:11px;
+.panel {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
-.value{
-  font-size:25px;
-  font-weight:bold;
-  margin-top:4px;
+.panel h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
 }
 
-.sectionTitle{
-  color:#cbd5e1;
-  font-size:12px;
-  font-weight:bold;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  margin:18px 0 9px;
+.risk {
+    padding: 14px;
+    border-radius: 10px;
+    background: #eef5ef;
 }
 
-.risk{
-  background:#0a1727;
-  border:1px solid #ffffff12;
-  border-radius:15px;
-  padding:14px;
+.risk strong {
+    display: block;
+    font-size: 22px;
+    margin-bottom: 4px;
 }
 
-.risk strong{
-  font-size:20px;
+.class-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid #eee;
 }
 
-.risk small{
-  display:block;
-  color:#8fa5bb;
-  margin-top:5px;
+.class-row:last-child {
+    border-bottom: none;
 }
 
-.row{
-  display:flex;
-  justify-content:space-between;
-  padding:10px 0;
-  border-bottom:1px solid #ffffff12;
-  font-size:13px;
+footer {
+    text-align: center;
+    color: #788078;
+    font-size: 12px;
+    padding: 25px;
 }
 
-.muted{
-  color:#8fa5bb;
-  font-size:12px;
-}
+@media (max-width: 700px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
 
-.inputs{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-}
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
 
-input{
-  width:100%;
-  margin-top:5px;
-  padding:10px;
-  border-radius:10px;
-  border:1px solid #ffffff12;
-  background:#091625;
-  color:white;
-}
-
-.history{
-  max-height:220px;
-  overflow:auto;
-}
-
-.historyItem{
-  padding:9px 0;
-  border-bottom:1px solid #ffffff12;
-  font-size:12px;
-}
-
-.notice{
-  margin-top:10px;
-  padding:11px;
-  border-radius:12px;
-  background:#0b1b2c;
-  border:1px solid #ffffff12;
-  color:#8fa5bb;
-  font-size:12px;
-  line-height:1.5;
-}
-
-footer{
-  text-align:center;
-  color:#6f8499;
-  font-size:11px;
-  padding:20px;
-}
-
-@media(max-width:780px){
-  .grid{
-    grid-template-columns:1fr;
-  }
-
-  .camera{
-    aspect-ratio:4/3;
-  }
-
-  .app{
-    padding:12px;
-  }
+    .hero h1 {
+        font-size: 25px;
+    }
 }
 </style>
 </head>
 
 <body>
 
-<div class="app">
-
 <header>
-  <div class="brand">
-    <div class="logo">🌱</div>
-
-    <div>
-      <h1>EcoSort AI <span style="color:#36d399">v2</span></h1>
-      <div class="sub">AI Environmental Monitoring Prototype</div>
-    </div>
-  </div>
-
-  <div class="badge" id="modelBadge">
-    AI: Loading...
-  </div>
+    <div class="logo">🌱 EcoSort AI</div>
+    <div class="status" id="systemStatus">Loading AI...</div>
 </header>
 
+<div class="container">
 
-<div class="grid">
+    <section class="hero">
+        <h1>Smart Waste Detection</h1>
+        <p>Use your camera to detect and monitor visible waste.</p>
+    </section>
 
-<main>
+    <div class="camera-card">
 
-<section class="card camera">
+        <div class="camera">
 
-  <video id="video" autoplay playsinline muted></video>
+            <video id="video" autoplay muted playsinline></video>
 
-  <canvas id="overlay"></canvas>
+            <canvas id="canvas"></canvas>
 
-  <div class="cameraTop">
+            <div class="loading" id="loading">
+                Loading AI model...
+            </div>
 
-    <div class="live">
-      <span id="liveDot" class="dot"></span>
-      <span id="liveText">CAMERA OFF</span>
+        </div>
+
+        <div class="controls">
+
+            <button class="start" id="startBtn" disabled>
+                Start Camera
+            </button>
+
+            <button class="stop" id="stopBtn" disabled>
+                Stop Camera
+            </button>
+
+        </div>
+
     </div>
 
-    <div class="status" id="aiStatus">
-      AI starting...
+    <div class="stats">
+
+        <div class="stat">
+            <div class="stat-title">Objects Detected</div>
+            <div class="stat-value" id="total">0</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">Highest Confidence</div>
+            <div class="stat-value" id="confidence">0%</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">Current Scan</div>
+            <div class="stat-value" id="scanStatus">OFF</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-title">Risk Level</div>
+            <div class="stat-value" id="riskLevel">LOW</div>
+        </div>
+
     </div>
 
-  </div>
+    <div class="dashboard">
 
-  <div class="cameraBottom">
+        <div class="panel">
 
-    <button id="startBtn">
-      📷 Start Camera
-    </button>
+            <h2>♻️ Detected Waste</h2>
 
-    <button id="scanBtn" class="secondary" disabled>
-      🔎 Scan Now
-    </button>
+            <div class="class-row">
+                <span>Plastic Bottle</span>
+                <strong id="bottle">0</strong>
+            </div>
 
-    <button id="stopBtn" class="secondary" disabled>
-      ⏹ Stop
-    </button>
+            <div class="class-row">
+                <span>Can</span>
+                <strong id="can">0</strong>
+            </div>
 
-  </div>
+            <div class="class-row">
+                <span>Plastic Bag</span>
+                <strong id="bag">0</strong>
+            </div>
 
-</section>
+            <div class="class-row">
+                <span>Wrapper</span>
+                <strong id="wrapper">0</strong>
+            </div>
 
+            <div class="class-row">
+                <span>Paper / Cardboard</span>
+                <strong id="paper">0</strong>
+            </div>
 
-<div class="controls">
+            <div class="class-row">
+                <span>Other Litter</span>
+                <strong id="other">0</strong>
+            </div>
 
-  <button id="locationBtn" class="secondary">
-    📍 Get Location
-  </button>
+        </div>
 
-  <button id="clearBtn" class="secondary">
-    🧹 Clear History
-  </button>
+        <div class="panel">
 
-</div>
+            <h2>🌊 Environmental Status</h2>
 
+            <div class="risk">
 
-<section class="card" style="margin-top:16px">
+                <strong id="riskText">
+                    LOW RISK
+                </strong>
 
-  <div class="sectionTitle">
-    Environmental Data
-  </div>
+                <span id="riskDescription">
+                    No significant amount of detected waste.
+                </span>
 
-  <div class="inputs">
+            </div>
 
-    <div>
-      <label class="muted">
-        Rainfall (mm)
-      </label>
+            <br>
 
-      <input
-        id="rain"
-        type="number"
-        min="0"
-        step="0.1"
-        placeholder="Example: 12"
-      >
+            <p>
+                EcoSort AI analyzes visible objects from the camera
+                and counts detected waste to support environmental
+                monitoring.
+            </p>
+
+        </div>
+
     </div>
 
-
-    <div>
-      <label class="muted">
-        Water Level (cm)
-      </label>
-
-      <input
-        id="water"
-        type="number"
-        min="0"
-        step="0.1"
-        placeholder="Example: 80"
-      >
-    </div>
-
-  </div>
-
-
-  <div class="notice">
-
-    Flood-risk status is a prototype indicator based on
-    entered environmental values and detected objects.
-    It is <b>not an official flood warning system.</b>
-
-  </div>
-
-</section>
-
-</main>
-
-
-<aside>
-
-<section class="card">
-
-<div class="sectionTitle">
-Live Overview
 </div>
-
-
-<div class="statgrid">
-
-<div class="stat">
-
-<div class="label">
-Trash-class objects
-</div>
-
-<div class="value" id="count">
-0
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="label">
-Highest confidence
-</div>
-
-<div class="value" id="confidence">
-—
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="label">
-Monitoring time
-</div>
-
-<div class="value" id="duration">
-00:00
-</div>
-
-</div>
-
-
-<div class="stat">
-
-<div class="label">
-Location
-</div>
-
-<div
-class="value"
-id="location"
-style="font-size:13px"
->
-—
-</div>
-
-</div>
-
-</div>
-
-
-<div class="sectionTitle">
-Flood-Risk Indicator
-</div>
-
-
-<div class="risk">
-
-<strong id="risk">
-LOW
-</strong>
-
-<small id="riskReason">
-Waiting for monitoring data.
-</small>
-
-</div>
-
-
-<div class="sectionTitle">
-Detected Objects
-</div>
-
-<div id="objects">
-
-<div class="muted">
-No objects detected yet.
-</div>
-
-</div>
-
-
-<div class="sectionTitle">
-Detection History
-</div>
-
-<div class="history" id="history">
-
-<div class="muted">
-No scans yet.
-</div>
-
-</div>
-
-</section>
-
-</aside>
-
-</div>
-
 
 <footer>
-EcoSort AI v2 • Browser-based prototype • TensorFlow.js + COCO-SSD
+    EcoSort AI • Environmental Waste Monitoring Prototype
 </footer>
-
-</div>
-
 
 <script>
 
-const video =
-document.getElementById("video");
-
-const canvas =
-document.getElementById("overlay");
-
-const ctx =
-canvas.getContext("2d");
-
-const startBtn =
-document.getElementById("startBtn");
-
-const scanBtn =
-document.getElementById("scanBtn");
-
-const stopBtn =
-document.getElementById("stopBtn");
-
-const aiStatus =
-document.getElementById("aiStatus");
-
-const modelBadge =
-document.getElementById("modelBadge");
-
-const liveDot =
-document.getElementById("liveDot");
-
-const liveText =
-document.getElementById("liveText");
-
-const countEl =
-document.getElementById("count");
-
-const confidenceEl =
-document.getElementById("confidence");
-
-const durationEl =
-document.getElementById("duration");
-
-const objectsEl =
-document.getElementById("objects");
-
-const historyEl =
-document.getElementById("history");
-
-const locationEl =
-document.getElementById("location");
-
-const riskEl =
-document.getElementById("risk");
-
-const riskReasonEl =
-document.getElementById("riskReason");
-
-
-let model = null;
-
+let model;
 let stream = null;
-
 let running = false;
 
-let startedAt = null;
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-let lastPredictions = [];
+const loading = document.getElementById("loading");
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
 
+const systemStatus = document.getElementById("systemStatus");
 
-let history =
-JSON.parse(
-localStorage.getItem("ecosortHistory") || "[]"
-);
+const totalElement = document.getElementById("total");
+const confidenceElement = document.getElementById("confidence");
+const scanStatus = document.getElementById("scanStatus");
+const riskLevel = document.getElementById("riskLevel");
 
+const riskText = document.getElementById("riskText");
+const riskDescription = document.getElementById("riskDescription");
 
-/*
-  COCO-SSD does NOT have a complete
-  garbage classification system.
-
-  These classes are treated as
-  potentially relevant objects.
-*/
-
-const TRASH_CLASSES =
-new Set([
-  "bottle",
-  "cup",
-  "wine glass",
-  "bowl",
-  "backpack",
-  "handbag",
-  "suitcase"
-]);
+const counters = {
+    bottle: document.getElementById("bottle"),
+    can: document.getElementById("can"),
+    bag: document.getElementById("bag"),
+    wrapper: document.getElementById("wrapper"),
+    paper: document.getElementById("paper"),
+    other: document.getElementById("other")
+};
 
 
-function prettyName(name){
+// COCO-SSD labels that can represent waste
+const wasteMapping = {
 
-  return name
-    .replace("wine glass","glass");
+    bottle: "bottle",
 
-}
+    can: "can",
 
+    cup: "cup",
 
-function drawBoxes(predictions){
+    book: "paper",
 
-  if(!video.videoWidth)
-    return;
+    bowl: "other",
 
-  canvas.width =
-    video.videoWidth;
+    handbag: "bag"
 
-  canvas.height =
-    video.videoHeight;
-
-  ctx.clearRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+};
 
 
-  predictions.forEach(p => {
+// Load AI
+async function loadAI() {
 
-    const [
-      x,
-      y,
-      w,
-      h
-    ] = p.bbox;
+    try {
 
+        systemStatus.textContent = "Loading AI...";
 
-    const isTrash =
-      TRASH_CLASSES.has(p.class);
+        model = await cocoSsd.load();
 
+        loading.style.display = "none";
 
-    ctx.lineWidth = 3;
+        systemStatus.textContent = "AI Ready";
 
-    ctx.strokeStyle =
-      isTrash
-      ? "#36d399"
-      : "#60a5fa";
+        startBtn.disabled = false;
 
+    } catch (error) {
 
-    ctx.strokeRect(
-      x,
-      y,
-      w,
-      h
-    );
+        console.error(error);
 
+        loading.textContent =
+            "AI failed to load. Check your internet connection.";
 
-    const label =
-      `${prettyName(p.class)} ${Math.round(p.score * 100)}%`;
+        systemStatus.textContent = "AI Error";
 
-
-    ctx.font =
-      "bold 14px Arial";
-
-
-    const width =
-      ctx.measureText(label).width + 12;
-
-
-    ctx.fillStyle =
-      isTrash
-      ? "#36d399"
-      : "#60a5fa";
-
-
-    ctx.fillRect(
-      x,
-      Math.max(0,y-23),
-      width,
-      23
-    );
-
-
-    ctx.fillStyle =
-      "#06111d";
-
-
-    ctx.fillText(
-      label,
-      x + 6,
-      Math.max(15,y-7)
-    );
-
-  });
+    }
 
 }
 
 
-function updateOverview(predictions){
+// Start camera
+async function startCamera() {
 
-  lastPredictions =
-    predictions;
+    try {
+
+        stream = await navigator.mediaDevices.getUserMedia({
+
+            video: {
+                facingMode: {
+                    ideal: "environment"
+                },
+                width: {
+                    ideal: 1280
+                },
+                height: {
+                    ideal: 720
+                }
+            },
+
+            audio: false
+
+        });
+
+        video.srcObject = stream;
+
+        running = true;
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        scanStatus.textContent = "ON";
+
+        systemStatus.textContent = "Scanning";
+
+        detectFrame();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Camera access failed. Make sure camera permission is allowed and the website is running on HTTPS."
+        );
+
+    }
+
+}
 
 
-  const trash =
-    predictions.filter(
-      p => TRASH_CLASSES.has(p.class)
+// Stop camera
+function stopCamera() {
+
+    running = false;
+
+    if (stream) {
+
+        stream.getTracks().forEach(track => track.stop());
+
+        stream = null;
+
+    }
+
+    video.srcObject = null;
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
     );
 
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
 
-  countEl.textContent =
-    trash.length;
+    scanStatus.textContent = "OFF";
+
+    systemStatus.textContent = "AI Ready";
+
+}
 
 
-  const highest =
-    predictions.reduce(
-      (max,p) =>
-        Math.max(max,p.score),
-      0
+// Detection loop
+async function detectFrame() {
+
+    if (!running) return;
+
+    if (video.readyState >= 2) {
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const predictions =
+            await model.detect(video);
+
+        drawDetections(predictions);
+
+    }
+
+    requestAnimationFrame(detectFrame);
+
+}
+
+
+// Draw detections
+function drawDetections(predictions) {
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
     );
 
+    let detectedWaste = [];
 
-  confidenceEl.textContent =
-    highest
-    ? Math.round(highest * 100) + "%"
-    : "—";
+    predictions.forEach(prediction => {
 
+        const confidence =
+            prediction.score;
 
-  if(!predictions.length){
+        const className =
+            prediction.class.toLowerCase();
 
-    objectsEl.innerHTML =
-      `<div class="muted">
-        No recognizable objects detected.
-      </div>`;
+        if (confidence < 0.50) return;
 
-  }else{
+        let mappedClass = null;
 
-    const counts = {};
+        if (className === "bottle") {
 
-    predictions.forEach(p => {
+            mappedClass = "plastic_bottle";
 
-      counts[p.class] =
-        (counts[p.class] || 0) + 1;
+        }
+
+        else if (
+            className === "can"
+        ) {
+
+            mappedClass = "can";
+
+        }
+
+        else if (
+            className === "handbag"
+        ) {
+
+            mappedClass = "plastic_bag";
+
+        }
+
+        else if (
+            className === "cup"
+        ) {
+
+            mappedClass = "wrapper_film";
+
+        }
+
+        else if (
+            className === "book"
+        ) {
+
+            mappedClass = "paper_cardboard";
+
+        }
+
+        else if (
+            className === "bowl"
+        ) {
+
+            mappedClass = "other_litter";
+
+        }
+
+        if (!mappedClass) return;
+
+        detectedWaste.push({
+            className: mappedClass,
+            score: confidence,
+            bbox: prediction.bbox
+        });
 
     });
 
 
-    objectsEl.innerHTML =
-      Object.entries(counts)
-      .map(([name,total]) => `
-
-        <div class="row">
-
-          <span>
-            ${prettyName(name)}
-          </span>
-
-          <b>
-            ${total}
-          </b>
-
-        </div>
-
-      `)
-      .join("");
-
-  }
-
-
-  updateRisk(trash.length);
-
-}
-
-
-function updateRisk(trashCount){
-
-  const rainfall =
-    Number(
-      document.getElementById("rain").value
-    ) || 0;
-
-
-  const water =
-    Number(
-      document.getElementById("water").value
-    ) || 0;
-
-
-  let score =
-    trashCount * 2;
-
-
-  if(rainfall >= 10)
-    score += 2;
-
-  if(rainfall >= 25)
-    score += 3;
-
-  if(water >= 50)
-    score += 2;
-
-  if(water >= 100)
-    score += 3;
-
-
-  let level = "LOW";
-
-  let reason =
-    "Current inputs indicate a low prototype risk level.";
-
-
-  if(score >= 8){
-
-    level = "HIGH";
-
-    reason =
-      "Multiple monitoring factors are elevated. Continue monitoring the area.";
-
-  }
-
-  else if(score >= 4){
-
-    level = "MEDIUM";
-
-    reason =
-      "Some monitoring factors are elevated. Continue observing the area.";
-
-  }
-
-
-  riskEl.textContent =
-    level;
-
-  riskReasonEl.textContent =
-    reason;
-
-
-  if(level === "HIGH"){
-
-    riskEl.parentElement.style.borderColor =
-      "#fb7185";
-
-  }
-
-  else if(level === "MEDIUM"){
-
-    riskEl.parentElement.style.borderColor =
-      "#fbbf24";
-
-  }
-
-  else{
-
-    riskEl.parentElement.style.borderColor =
-      "#ffffff12";
-
-  }
-
-}
-
-
-async function loadAI(){
-
-  try{
-
-    aiStatus.textContent =
-      "Loading AI...";
-
-
-    model =
-      await cocoSsd.load();
-
-
-    modelBadge.textContent =
-      "AI: READY";
-
-
-    aiStatus.textContent =
-      "AI READY";
-
-
-  }catch(error){
-
-    console.error(error);
-
-
-    modelBadge.textContent =
-      "AI: ERROR";
-
-
-    aiStatus.textContent =
-      "AI failed to load";
-
-  }
-
-}
-
-
-async function startCamera(){
-
-  try{
-
-    if(!window.isSecureContext){
-
-      alert(
-        "Camera access requires HTTPS. Open your GitHub Pages website."
-      );
-
-      return;
-
-    }
-
-
-    if(
-      !navigator.mediaDevices ||
-      !navigator.mediaDevices.getUserMedia
-    ){
-
-      alert(
-        "This browser does not provide camera access."
-      );
-
-      return;
-
-    }
-
-
-    stream =
-      await navigator.mediaDevices.getUserMedia({
-
-        video:{
-          facingMode:{
-            ideal:"environment"
-          },
-
-          width:{
-            ideal:1280
-          },
-
-          height:{
-            ideal:720
-          }
-        },
-
-        audio:false
-
-      });
-
-
-    video.srcObject =
-      stream;
-
-
-    running = true;
-
-    startedAt =
-      Date.now();
-
-
-    liveDot.classList.add("on");
-
-    liveText.textContent =
-      "CAMERA LIVE";
-
-
-    startBtn.disabled = true;
-
-    stopBtn.disabled = false;
-
-    scanBtn.disabled = false;
-
-
-    detectLoop();
-
-
-  }catch(error){
-
-    console.error(error);
-
-
-    alert(
-      "Camera could not start: " +
-      error.name +
-      "\\n\\nAllow camera permission in Chrome site settings and try again."
-    );
-
-  }
-
-}
-
-
-function stopCamera(){
-
-  running = false;
-
-
-  if(stream){
-
-    stream
-      .getTracks()
-      .forEach(track =>
-        track.stop()
-      );
-
-  }
-
-
-  stream = null;
-
-  video.srcObject = null;
-
-
-  liveDot.classList.remove("on");
-
-  liveText.textContent =
-    "CAMERA OFF";
-
-
-  startBtn.disabled = false;
-
-  stopBtn.disabled = true;
-
-  scanBtn.disabled = true;
-
-
-  ctx.clearRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-}
-
-
-async function detectLoop(){
-
-  if(!running)
-    return;
-
-
-  if(
-    model &&
-    video.readyState >= 2
-  ){
-
-    try{
-
-      const predictions =
-        await model.detect(
-          video,
-          20,
-          0.5
+    // Draw boxes
+    detectedWaste.forEach(item => {
+
+        const [
+            x,
+            y,
+            width,
+            height
+        ] = item.bbox;
+
+        ctx.lineWidth = 3;
+
+        ctx.strokeStyle = "#00ff88";
+
+        ctx.strokeRect(
+            x,
+            y,
+            width,
+            height
         );
 
+        ctx.fillStyle =
+            "rgba(0,0,0,0.7)";
 
-      drawBoxes(
-        predictions
-      );
+        const label =
+            formatClass(item.className) +
+            " " +
+            Math.round(item.score * 100) +
+            "%";
+
+        ctx.font =
+            "bold 15px Arial";
+
+        const textWidth =
+            ctx.measureText(label).width;
+
+        ctx.fillRect(
+            x,
+            Math.max(0, y - 25),
+            textWidth + 12,
+            25
+        );
+
+        ctx.fillStyle = "white";
+
+        ctx.fillText(
+            label,
+            x + 6,
+            Math.max(17, y - 7)
+        );
+
+    });
 
 
-      updateOverview(
-        predictions
-      );
-
-
-    }catch(error){
-
-      console.error(error);
-
-    }
-
-  }
-
-
-  if(running)
-    requestAnimationFrame(
-      detectLoop
+    updateDashboard(
+        detectedWaste
     );
 
 }
 
 
-function scanNow(){
+// Convert class names
+function formatClass(name) {
 
-  if(!lastPredictions.length){
+    const names = {
 
-    addHistory(
-      "No recognizable objects",
-      0
-    );
+        plastic_bottle:
+            "Plastic Bottle",
 
-    return;
+        can:
+            "Can",
 
-  }
+        plastic_bag:
+            "Plastic Bag",
 
+        wrapper_film:
+            "Wrapper",
 
-  const trash =
-    lastPredictions.filter(
-      p => TRASH_CLASSES.has(p.class)
-    );
+        paper_cardboard:
+            "Paper/Cardboard",
 
+        other_litter:
+            "Other Litter"
 
-  const names =
-    trash.length
-    ? trash
-        .map(
-          p => prettyName(p.class)
-        )
-        .join(", ")
-    : "No trash-class objects";
+    };
 
-
-  addHistory(
-    names,
-    trash.length
-  );
+    return names[name] || name;
 
 }
 
 
-function addHistory(
-  text,
-  count
-){
+// Update dashboard
+function updateDashboard(items) {
 
-  const item = {
+    const counts = {
 
-    time:
-      new Date()
-      .toLocaleTimeString(),
+        plastic_bottle: 0,
+        can: 0,
+        plastic_bag: 0,
+        wrapper_film: 0,
+        paper_cardboard: 0,
+        other_litter: 0
 
-    text:text,
+    };
 
-    count:count
+    let highestConfidence = 0;
 
-  };
+    items.forEach(item => {
 
+        counts[item.className]++;
 
-  history.unshift(
-    item
-  );
+        if (
+            item.score >
+            highestConfidence
+        ) {
 
+            highestConfidence =
+                item.score;
 
-  history =
-    history.slice(
-      0,
-      30
-    );
+        }
 
-
-  localStorage.setItem(
-    "ecosortHistory",
-    JSON.stringify(history)
-  );
+    });
 
 
-  renderHistory();
+    totalElement.textContent =
+        items.length;
 
-}
-
-
-function renderHistory(){
-
-  if(!history.length){
-
-    historyEl.innerHTML =
-      `<div class="muted">
-        No scans yet.
-      </div>`;
-
-    return;
-
-  }
+    confidenceElement.textContent =
+        Math.round(
+            highestConfidence * 100
+        ) + "%";
 
 
-  historyEl.innerHTML =
-    history.map(h => `
+    counters.bottle.textContent =
+        counts.plastic_bottle;
 
-      <div class="historyItem">
+    counters.can.textContent =
+        counts.can;
 
-        <b>
-          ${h.count}
-          object${h.count === 1 ? "" : "s"}
-        </b>
+    counters.bag.textContent =
+        counts.plastic_bag;
 
-        • ${h.time}
+    counters.wrapper.textContent =
+        counts.wrapper_film;
 
-        <br>
+    counters.paper.textContent =
+        counts.paper_cardboard;
 
-        <span class="muted">
-          ${h.text}
-        </span>
+    counters.other.textContent =
+        counts.other_litter;
 
-      </div>
 
-    `)
-    .join("");
+    updateRisk(items.length);
 
 }
 
 
-document
-.getElementById("locationBtn")
-.onclick = () => {
+// Environmental risk
+function updateRisk(total) {
 
-  if(!navigator.geolocation){
+    let level;
 
-    alert(
-      "Geolocation is not supported."
-    );
+    if (total === 0) {
 
-    return;
+        level = "LOW";
 
-  }
+        riskText.textContent =
+            "LOW RISK";
 
-
-  locationEl.textContent =
-    "Getting...";
-
-
-  navigator.geolocation.getCurrentPosition(
-
-    position => {
-
-      locationEl.textContent =
-
-        position.coords.latitude
-        .toFixed(4)
-        + ", "
-        +
-        position.coords.longitude
-        .toFixed(4);
-
-    },
-
-    () => {
-
-      locationEl.textContent =
-        "Denied";
-
-      alert(
-        "Location permission was denied."
-      );
-
-    },
-
-    {
-      enableHighAccuracy:true,
-      timeout:10000
-    }
-
-  );
-
-};
-
-
-document
-.getElementById("clearBtn")
-.onclick = () => {
-
-  history = [];
-
-  localStorage.removeItem(
-    "ecosortHistory"
-  );
-
-  renderHistory();
-
-};
-
-
-["rain","water"].forEach(id => {
-
-  document
-  .getElementById(id)
-  .addEventListener(
-    "input",
-    () => {
-
-      updateRisk(
-        lastPredictions.filter(
-          p => TRASH_CLASSES.has(p.class)
-        ).length
-      );
-
-    }
-  );
-
-});
-
-
-startBtn.onclick =
-  startCamera;
-
-stopBtn.onclick =
-  stopCamera;
-
-scanBtn.onclick =
-  scanNow;
-
-
-renderHistory();
-
-loadAI();
-
-
-setInterval(
-  () => {
-
-    if(!startedAt){
-
-      durationEl.textContent =
-        "00:00";
-
-      return;
+        riskDescription.textContent =
+            "No significant amount of detected waste.";
 
     }
 
+    else if (total <= 3) {
 
-    const seconds =
-      Math.floor(
-        (Date.now() - startedAt)
-        / 1000
-      );
+        level = "MODERATE";
+
+        riskText.textContent =
+            "MODERATE RISK";
+
+        riskDescription.textContent =
+            "Some visible waste has been detected.";
+
+    }
+
+    else {
+
+        level = "HIGH";
+
+        riskText.textContent =
+            "HIGH WASTE LEVEL";
+
+        riskDescription.textContent =
+            "A large amount of visible waste has been detected.";
+
+    }
+
+    riskLevel.textContent =
+        level;
+
+}
 
 
-    durationEl.textContent =
-
-      String(
-        Math.floor(seconds / 60)
-      ).padStart(2,"0")
-
-      +
-
-      ":" +
-
-      String(
-        seconds % 60
-      ).padStart(2,"0");
-
-  },
-  1000
+// Buttons
+startBtn.addEventListener(
+    "click",
+    startCamera
 );
+
+stopBtn.addEventListener(
+    "click",
+    stopCamera
+);
+
+
+// Start AI
+loadAI();
 
 </script>
 
