@@ -1,55 +1,1175 @@
-async function startCamera() {
+<!DOCTYPE html>
+<html lang="en">
 
-    if (!navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia) {
+<head>
 
-        alert(
-            "Camera API is not available. Open EcoSort AI through HTTPS in Chrome."
-        );
+<meta charset="UTF-8">
 
-        return;
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>EcoSort AI</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f7f5;
+    color: #17221b;
+}
+
+header {
+    background: #163d2a;
+    color: white;
+    padding: 16px 20px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 21px;
+    font-weight: bold;
+}
+
+.status {
+    background: #315b44;
+    padding: 7px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 20px;
+}
+
+.hero {
+    margin-bottom: 20px;
+}
+
+.hero h1 {
+    font-size: 29px;
+    margin-bottom: 7px;
+}
+
+.hero p {
+    color: #657169;
+    line-height: 1.5;
+}
+
+.camera-card,
+.panel,
+.stat {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+}
+
+.camera-card {
+    padding: 15px;
+}
+
+.camera {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #111;
+    border-radius: 13px;
+    overflow: hidden;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.camera-message {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+    padding: 25px;
+
+    color: white;
+    background: rgba(0,0,0,0.55);
+
+    z-index: 5;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+button {
+    border: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.start {
+    background: #1f7a4d;
+    color: white;
+}
+
+.stop {
+    background: #d9534f;
+    color: white;
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.diagnostic {
+    margin-top: 12px;
+    padding: 12px;
+
+    border-radius: 9px;
+
+    background: #f1f4f2;
+
+    font-size: 13px;
+    color: #5d6861;
+
+    line-height: 1.5;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.stat {
+    padding: 18px;
+}
+
+.stat-title {
+    color: #737d76;
+    font-size: 13px;
+}
+
+.stat-value {
+    font-size: 27px;
+    font-weight: bold;
+    margin-top: 6px;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 18px;
+}
+
+.panel {
+    padding: 20px;
+}
+
+.panel h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.class-row {
+    display: flex;
+    justify-content: space-between;
+
+    padding: 10px 0;
+
+    border-bottom: 1px solid #eee;
+}
+
+.class-row:last-child {
+    border-bottom: none;
+}
+
+.risk {
+    padding: 16px;
+    border-radius: 12px;
+    background: #eef5ef;
+}
+
+.risk strong {
+    display: block;
+    font-size: 22px;
+    margin-bottom: 5px;
+}
+
+.risk span {
+    font-size: 13px;
+    color: #59645d;
+}
+
+.input-group {
+    margin-top: 16px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+select {
+    width: 100%;
+    padding: 11px;
+
+    border: 1px solid #ddd;
+    border-radius: 8px;
+
+    background: white;
+    font-size: 14px;
+}
+
+.score-box {
+    margin-top: 18px;
+
+    padding: 15px;
+
+    border-radius: 10px;
+
+    background: #f3f5f3;
+
+    text-align: center;
+}
+
+.score-number {
+    font-size: 35px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.info {
+    margin-top: 16px;
+
+    padding: 13px;
+
+    border-radius: 10px;
+
+    background: #f4f7f5;
+
+    font-size: 12px;
+    line-height: 1.5;
+
+    color: #5e6861;
+}
+
+.alert {
+    display: none;
+
+    margin-top: 14px;
+
+    padding: 13px;
+
+    border-radius: 10px;
+
+    background: #f5e8df;
+
+    font-size: 13px;
+    font-weight: bold;
+}
+
+footer {
+    text-align: center;
+
+    color: #788078;
+
+    font-size: 12px;
+
+    padding: 30px 20px;
+}
+
+@media (max-width: 700px) {
+
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
     }
+
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .hero h1 {
+        font-size: 25px;
+    }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="logo">
+        🌱 EcoSort AI
+    </div>
+
+    <div
+        class="status"
+        id="systemStatus">
+        Starting...
+    </div>
+
+</header>
+
+
+<div class="container">
+
+
+<section class="hero">
+
+    <h1>
+        Smart Waste & Flood Monitoring
+    </h1>
+
+    <p>
+        EcoSort AI detects visible objects through
+        the camera and combines environmental
+        conditions into a prototype flood-risk
+        indicator.
+    </p>
+
+</section>
+
+
+<!-- CAMERA -->
+
+<div class="camera-card">
+
+    <div class="camera">
+
+        <video
+            id="video"
+            autoplay
+            muted
+            playsinline>
+        </video>
+
+        <canvas
+            id="canvas">
+        </canvas>
+
+        <div
+            class="camera-message"
+            id="cameraMessage">
+
+            Loading AI model...
+
+        </div>
+
+    </div>
+
+
+    <div class="controls">
+
+        <button
+            class="start"
+            id="startBtn"
+            disabled>
+
+            📷 Start Camera
+
+        </button>
+
+
+        <button
+            class="stop"
+            id="stopBtn"
+            disabled>
+
+            ⛔ Stop Camera
+
+        </button>
+
+    </div>
+
+
+    <div
+        class="diagnostic"
+        id="diagnostic">
+
+        System starting...
+
+    </div>
+
+
+    <div
+        class="alert"
+        id="warningAlert">
+
+        ⚠️ High environmental warning level detected.
+
+    </div>
+
+</div>
+
+
+<!-- STATS -->
+
+<div class="stats">
+
+
+    <div class="stat">
+
+        <div class="stat-title">
+            Objects Detected
+        </div>
+
+        <div
+            class="stat-value"
+            id="total">
+
+            0
+
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-title">
+            Highest Confidence
+        </div>
+
+        <div
+            class="stat-value"
+            id="confidence">
+
+            0%
+
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-title">
+            Camera
+        </div>
+
+        <div
+            class="stat-value"
+            id="scanStatus">
+
+            OFF
+
+        </div>
+
+    </div>
+
+
+    <div class="stat">
+
+        <div class="stat-title">
+            Flood Risk
+        </div>
+
+        <div
+            class="stat-value"
+            id="riskLevel">
+
+            LOW
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- DASHBOARD -->
+
+<div class="dashboard">
+
+
+<!-- WASTE PANEL -->
+
+<div class="panel">
+
+    <h2>
+        ♻️ Detected Waste
+    </h2>
+
+
+    <div class="class-row">
+
+        <span>
+            🧴 Plastic Bottle
+        </span>
+
+        <strong id="bottle">
+            0
+        </strong>
+
+    </div>
+
+
+    <div class="class-row">
+
+        <span>
+            🥫 Can
+        </span>
+
+        <strong id="can">
+            0
+        </strong>
+
+    </div>
+
+
+    <div class="class-row">
+
+        <span>
+            🛍️ Plastic Bag
+        </span>
+
+        <strong id="bag">
+            0
+        </strong>
+
+    </div>
+
+
+    <div class="class-row">
+
+        <span>
+            🧻 Wrapper
+        </span>
+
+        <strong id="wrapper">
+            0
+        </strong>
+
+    </div>
+
+
+    <div class="class-row">
+
+        <span>
+            📄 Paper / Cardboard
+        </span>
+
+        <strong id="paper">
+            0
+        </strong>
+
+    </div>
+
+
+    <div class="class-row">
+
+        <span>
+            🗑️ Other Litter
+        </span>
+
+        <strong id="other">
+            0
+        </strong>
+
+    </div>
+
+</div>
+
+
+<!-- FLOOD PANEL -->
+
+<div class="panel">
+
+    <h2>
+        🌊 Flood Risk Monitor
+    </h2>
+
+
+    <div
+        class="risk"
+        id="floodRiskBox">
+
+        <strong
+            id="floodRiskText">
+
+            LOW RISK
+
+        </strong>
+
+        <span
+            id="floodRiskDescription">
+
+            Current conditions are below
+            the warning threshold.
+
+        </span>
+
+    </div>
+
+
+    <div class="input-group">
+
+        <label>
+            🌧️ Rainfall Intensity
+        </label>
+
+        <select id="rainfall">
+
+            <option value="0">
+                No Rain
+            </option>
+
+            <option value="1">
+                Light Rain
+            </option>
+
+            <option value="2">
+                Moderate Rain
+            </option>
+
+            <option value="3">
+                Heavy Rain
+            </option>
+
+            <option value="4">
+                Very Heavy Rain
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div class="input-group">
+
+        <label>
+            🌊 Water Level
+        </label>
+
+        <select id="waterLevel">
+
+            <option value="0">
+                Normal
+            </option>
+
+            <option value="1">
+                Elevated
+            </option>
+
+            <option value="2">
+                High
+            </option>
+
+            <option value="3">
+                Critical
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <div class="score-box">
+
+        Flood Risk Score
+
+        <div
+            class="score-number"
+            id="floodScore">
+
+            0
+
+        </div>
+
+    </div>
+
+
+    <div class="info">
+
+        <strong>
+            Prototype Notice:
+        </strong>
+
+        The flood score is a prototype
+        decision-support indicator. It is not
+        an official flood forecast. Real
+        deployment would require calibration
+        using local rainfall, water-level,
+        drainage, and historical flood data.
+
+    </div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<footer>
+
+    EcoSort AI • Environmental Monitoring Prototype
+
+</footer>
+
+
+
+<script>
+
+/* =========================================
+   VARIABLES
+========================================= */
+
+let model = null;
+
+let stream = null;
+
+let running = false;
+
+let detecting = false;
+
+
+const video =
+    document.getElementById("video");
+
+const canvas =
+    document.getElementById("canvas");
+
+const ctx =
+    canvas.getContext("2d");
+
+
+const cameraMessage =
+    document.getElementById(
+        "cameraMessage"
+    );
+
+
+const diagnostic =
+    document.getElementById(
+        "diagnostic"
+    );
+
+
+const systemStatus =
+    document.getElementById(
+        "systemStatus"
+    );
+
+
+const startBtn =
+    document.getElementById(
+        "startBtn"
+    );
+
+
+const stopBtn =
+    document.getElementById(
+        "stopBtn"
+    );
+
+
+const totalElement =
+    document.getElementById(
+        "total"
+    );
+
+
+const confidenceElement =
+    document.getElementById(
+        "confidence"
+    );
+
+
+const scanStatus =
+    document.getElementById(
+        "scanStatus"
+    );
+
+
+const riskLevel =
+    document.getElementById(
+        "riskLevel"
+    );
+
+
+const warningAlert =
+    document.getElementById(
+        "warningAlert"
+    );
+
+
+/* =========================================
+   COUNTERS
+========================================= */
+
+const counters = {
+
+    bottle:
+        document.getElementById(
+            "bottle"
+        ),
+
+    can:
+        document.getElementById(
+            "can"
+        ),
+
+    bag:
+        document.getElementById(
+            "bag"
+        ),
+
+    wrapper:
+        document.getElementById(
+            "wrapper"
+        ),
+
+    paper:
+        document.getElementById(
+            "paper"
+        ),
+
+    other:
+        document.getElementById(
+            "other"
+        )
+
+};
+
+
+/* =========================================
+   FLOOD ELEMENTS
+========================================= */
+
+const rainfallInput =
+    document.getElementById(
+        "rainfall"
+    );
+
+
+const waterLevelInput =
+    document.getElementById(
+        "waterLevel"
+    );
+
+
+const floodScoreElement =
+    document.getElementById(
+        "floodScore"
+    );
+
+
+const floodRiskText =
+    document.getElementById(
+        "floodRiskText"
+    );
+
+
+const floodRiskDescription =
+    document.getElementById(
+        "floodRiskDescription"
+    );
+
+
+const floodRiskBox =
+    document.getElementById(
+        "floodRiskBox"
+    );
+
+
+/* =========================================
+   DIAGNOSTIC
+========================================= */
+
+function setDiagnostic(message) {
+
+    diagnostic.textContent =
+        message;
+
+}
+
+
+/* =========================================
+   LOAD AI
+========================================= */
+
+async function loadAI() {
 
     try {
 
-        console.log("Requesting camera...");
+        systemStatus.textContent =
+            "Loading AI";
 
-        const devices =
-            await navigator.mediaDevices.enumerateDevices();
-
-        console.log(
-            "Camera devices:",
-            devices.filter(
-                d => d.kind === "videoinput"
-            )
+        setDiagnostic(
+            "Loading browser AI model..."
         );
 
 
-        stream =
-            await navigator.mediaDevices.getUserMedia({
-
-                audio: false,
-
-                video: {
-                    facingMode: {
-                        ideal: "environment"
-                    },
-
-                    width: {
-                        ideal: 1280
-                    },
-
-                    height: {
-                        ideal: 720
-                    }
-                }
-
-            });
+        model =
+            await cocoSsd.load();
 
 
-        console.log(
-            "Camera stream started"
+        systemStatus.textContent =
+            "AI Ready";
+
+
+        cameraMessage.textContent =
+            "AI ready. Press Start Camera.";
+
+
+        setDiagnostic(
+            "AI model loaded successfully. Camera is ready."
         );
+
+
+        startBtn.disabled =
+            false;
+
+
+        calculateFloodRisk(0);
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+
+        systemStatus.textContent =
+            "AI Error";
+
+
+        cameraMessage.textContent =
+            "AI failed to load.";
+
+
+        setDiagnostic(
+            "AI could not load. Check your internet connection and reload the page."
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   CAMERA SUPPORT CHECK
+========================================= */
+
+function checkCameraSupport() {
+
+    if (
+        !window.isSecureContext
+    ) {
+
+        return {
+            ok: false,
+            message:
+                "Camera blocked: this page is not running in a secure HTTPS context."
+        };
+
+    }
+
+
+    if (
+        !navigator.mediaDevices
+    ) {
+
+        return {
+            ok: false,
+            message:
+                "Camera API is unavailable in this browser."
+        };
+
+    }
+
+
+    if (
+        !navigator.mediaDevices.getUserMedia
+    ) {
+
+        return {
+            ok: false,
+            message:
+                "Your browser does not support camera access."
+        };
+
+    }
+
+
+    return {
+        ok: true
+    };
+
+}
+
+
+/* =========================================
+   START CAMERA
+========================================= */
+
+async function startCamera() {
+
+    const support =
+        checkCameraSupport();
+
+
+    if (!support.ok) {
+
+        alert(
+            support.message
+        );
+
+        setDiagnostic(
+            support.message
+        );
+
+        return;
+
+    }
+
+
+    if (!model) {
+
+        alert(
+            "AI is still loading."
+        );
+
+        return;
+
+    }
+
+
+    /*
+     If an old stream exists,
+     stop it first.
+    */
+
+    if (stream) {
+
+        stream
+            .getTracks()
+            .forEach(
+                track =>
+                    track.stop()
+            );
+
+        stream = null;
+
+    }
+
+
+    try {
+
+        setDiagnostic(
+            "Requesting camera permission..."
+        );
+
+
+        /*
+         First attempt:
+         rear camera.
+        */
+
+        try {
+
+            stream =
+                await navigator
+                    .mediaDevices
+                    .getUserMedia({
+
+                        video: {
+                            facingMode: {
+                                exact:
+                                    "environment"
+                            },
+
+                            width: {
+                                ideal: 1280
+                            },
+
+                            height: {
+                                ideal: 720
+                            }
+                        },
+
+                        audio: false
+
+                    });
+
+        }
+
+        catch(environmentError) {
+
+            console.warn(
+                "Rear camera attempt failed:",
+                environmentError
+            );
+
+
+            /*
+             Fallback:
+             any available camera.
+            */
+
+            setDiagnostic(
+                "Rear camera unavailable. Trying another camera..."
+            );
+
+
+            stream =
+                await navigator
+                    .mediaDevices
+                    .getUserMedia({
+
+                        video: true,
+
+                        audio: false
+
+                    });
+
+        }
 
 
         video.srcObject =
@@ -66,6 +1186,7 @@ async function startCamera() {
         startBtn.disabled =
             true;
 
+
         stopBtn.disabled =
             false;
 
@@ -73,14 +1194,26 @@ async function startCamera() {
         scanStatus.textContent =
             "ON";
 
+
         systemStatus.textContent =
             "Scanning";
 
 
+        cameraMessage.classList.add(
+            "hidden"
+        );
+
+
+        setDiagnostic(
+            "Camera connected successfully. EcoSort AI is scanning."
+        );
+
+
         detectFrame();
 
+    }
 
-    } catch (error) {
+    catch(error) {
 
         console.error(
             "CAMERA ERROR:",
@@ -88,8 +1221,28 @@ async function startCamera() {
         );
 
 
+        running =
+            false;
+
+
+        startBtn.disabled =
+            false;
+
+
+        stopBtn.disabled =
+            true;
+
+
+        scanStatus.textContent =
+            "OFF";
+
+
+        systemStatus.textContent =
+            "Camera Error";
+
+
         let message =
-            "Camera could not start.\n\n";
+            "";
 
 
         if (
@@ -97,8 +1250,8 @@ async function startCamera() {
             "NotAllowedError"
         ) {
 
-            message +=
-                "Camera permission was denied. Allow camera access in Chrome.";
+            message =
+                "Camera permission was denied. Allow camera access for this website in Chrome.";
 
         }
 
@@ -107,7 +1260,7 @@ async function startCamera() {
             "NotFoundError"
         ) {
 
-            message +=
+            message =
                 "No camera was found on this device.";
 
         }
@@ -117,8 +1270,18 @@ async function startCamera() {
             "NotReadableError"
         ) {
 
-            message +=
-                "The camera is being used by another application.";
+            message =
+                "The camera is already being used by another app.";
+
+        }
+
+        else if (
+            error.name ===
+            "OverconstrainedError"
+        ) {
+
+            message =
+                "The requested camera settings are not available.";
 
         }
 
@@ -127,23 +1290,134 @@ async function startCamera() {
             "SecurityError"
         ) {
 
-            message +=
-                "The browser blocked camera access because of the page security settings.";
+            message =
+                "The browser blocked camera access because of security settings.";
 
         }
 
         else {
 
-            message +=
-                error.name +
-                ": " +
+            message =
+                "Camera error: "
+                +
+                error.name
+                +
+                " — "
+                +
                 error.message;
 
         }
 
 
-        alert(message);
+        cameraMessage.textContent =
+            "Camera could not start.";
+
+
+        cameraMessage.classList.remove(
+            "hidden"
+        );
+
+
+        setDiagnostic(
+            message
+        );
+
+
+        alert(
+            message
+        );
 
     }
 
 }
+
+
+/* =========================================
+   STOP CAMERA
+========================================= */
+
+function stopCamera() {
+
+    running =
+        false;
+
+
+    if (stream) {
+
+        stream
+            .getTracks()
+            .forEach(
+                track =>
+                    track.stop()
+            );
+
+        stream =
+            null;
+
+    }
+
+
+    video.srcObject =
+        null;
+
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    startBtn.disabled =
+        false;
+
+
+    stopBtn.disabled =
+        true;
+
+
+    scanStatus.textContent =
+        "OFF";
+
+
+    systemStatus.textContent =
+        "AI Ready";
+
+
+    cameraMessage.textContent =
+        "Camera stopped. Press Start Camera.";
+
+
+    cameraMessage.classList.remove(
+        "hidden"
+    );
+
+
+    setDiagnostic(
+        "Camera stopped."
+    );
+
+}
+
+
+/* =========================================
+   DETECTION LOOP
+========================================= */
+
+async function detectFrame() {
+
+    if (!running)
+        return;
+
+
+    if (
+        video.readyState >= 2 &&
+        !detecting
+    ) {
+
+        detecting =
+            true;
+
+
+        try {
